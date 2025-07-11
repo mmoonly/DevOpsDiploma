@@ -4,5 +4,3 @@ alertmanager_port: 9093
 alertmanager_config_dir: "/data/alertmanager/configs"
 alertmanager_data_dir: "/data/alertmanager/data"
 alertmanager_flush: false
-telegram_bot_token: "***REMOVED***"
-telegram_chat_id: ***REMOVED***
