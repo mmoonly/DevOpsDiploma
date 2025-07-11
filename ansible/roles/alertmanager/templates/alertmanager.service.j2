@@ -1,0 +1,15 @@
+[Unit]
+Description=Alertmanager Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --name alertmanager -p {{ alertmanager_port }}:{{ alertmanager_port }} \
+  -v {{ alertmanager_config_dir }}:/etc/alertmanager \
+  -v {{ alertmanager_data_dir }}:/alertmanager \
+  prom/alertmanager:{{ alertmanager_version }}
+ExecStop=/usr/bin/docker rm -f alertmanager
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

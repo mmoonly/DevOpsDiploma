@@ -1,0 +1,15 @@
+[Unit]
+Description=Prometheus Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --name prometheus -p {{ prometheus_port }}:{{ prometheus_port }} \
+  -v {{ prometheus_config_dir }}:/etc/prometheus \
+  -v {{ prometheus_data_dir }}:/prometheus \
+  prom/prometheus:{{ prometheus_version }}
+ExecStop=/usr/bin/docker rm -f prometheus
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

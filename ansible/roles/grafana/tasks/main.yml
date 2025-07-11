@@ -1,2 +1,83 @@
 ---
-# tasks file for ansible/roles/grafana
+- name: Remove Grafana (grafana_flush=true)
+  block:
+    - name: Stop Grafana service
+      ansible.builtin.systemd:
+        name: grafana
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Grafana container
+      ansible.builtin.command: docker rm -f grafana
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Grafana directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ grafana_config_dir }}"
+        - "{{ grafana_data_dir }}"
+    - name: Remove Grafana systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/grafana.service
+        state: absent
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Reset failed Grafana service
+      ansible.builtin.command: systemctl reset-failed grafana.service
+      ignore_errors: yes
+  when: grafana_flush | bool
+
+- name: Install and configure Grafana (grafana_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Grafana directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: 472
+        group: 472
+        mode: '0775'
+      loop:
+        - "{{ grafana_config_dir }}"
+        - "{{ grafana_provisioning_dir }}/datasources"
+        - "{{ grafana_provisioning_dir }}/dashboards"
+        - "{{ grafana_data_dir }}"
+    - name: Copy Grafana datasource configuration
+      ansible.builtin.template:
+        src: datasource.yml.j2
+        dest: "{{ grafana_provisioning_dir }}/datasources/datasource.yml"
+        mode: '0644'
+    - name: Copy Grafana dashboard provisioning configuration
+      ansible.builtin.template:
+        src: dashboard-provisioning.yml.j2
+        dest: "{{ grafana_provisioning_dir }}/dashboards/default.yml"
+        mode: '0644'
+    - name: Copy Node Exporter dashboard
+      ansible.builtin.copy:
+        src: node-exporter-dashboard.json
+        dest: "{{ grafana_config_dir }}/node-exporter-dashboard.json"
+        mode: '0644'
+    - name: Create Grafana systemd unit
+      ansible.builtin.template:
+        src: grafana.service.j2
+        dest: /etc/systemd/system/grafana.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Start Grafana service
+      ansible.builtin.systemd:
+        name: grafana
+        state: started
+        enabled: yes
+  when: not grafana_flush | bool

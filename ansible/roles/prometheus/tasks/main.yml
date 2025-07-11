@@ -1,2 +1,76 @@
 ---
-# tasks file for ansible/roles/prometheus
+- name: Remove Prometheus (prometheus_flush=true)
+  block:
+    - name: Stop Prometheus service
+      ansible.builtin.systemd:
+        name: prometheus
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Prometheus container
+      ansible.builtin.command: docker rm -f prometheus
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Prometheus directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ prometheus_config_dir }}"
+        - "{{ prometheus_data_dir }}"
+    - name: Remove Prometheus systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/prometheus.service
+        state: absent
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Reset failed Prometheus service
+      ansible.builtin.command: systemctl reset-failed prometheus.service
+      ignore_errors: yes
+  when: prometheus_flush | bool
+
+- name: Install and configure Prometheus (prometheus_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Prometheus directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+      loop:
+        - "{{ prometheus_config_dir }}"
+        - "{{ prometheus_data_dir }}"
+    - name: Copy Prometheus configuration
+      ansible.builtin.template:
+        src: prometheus.yml.j2
+        dest: "{{ prometheus_config_dir }}/prometheus.yml"
+        mode: '0644'
+    - name: Copy Prometheus alert rules
+      ansible.builtin.copy:
+        src: alert.rules.yml
+        dest: "{{ prometheus_config_dir }}/alert.rules.yml"
+        mode: '0644'
+    - name: Create Prometheus systemd unit
+      ansible.builtin.template:
+        src: prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Start Prometheus service
+      ansible.builtin.systemd:
+        name: prometheus
+        state: started
+        enabled: yes
+  when: not prometheus_flush | bool

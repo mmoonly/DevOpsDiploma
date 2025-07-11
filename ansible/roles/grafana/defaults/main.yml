@@ -1,2 +1,9 @@
 ---
-# defaults file for ansible/roles/grafana
+grafana_version: "latest"
+grafana_port: 3000
+grafana_config_dir: "/data/grafana/configs"
+grafana_provisioning_dir: "/data/grafana/configs/provisioning"
+grafana_data_dir: "/data/grafana/data"
+grafana_flush: false
+prometheus_host: "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"
+prometheus_port: 9090

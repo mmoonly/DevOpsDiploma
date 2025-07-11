@@ -1,0 +1,35 @@
+groups:
+- name: example
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} has been down for more than 5 minutes."
+  - alert: HighCPUUsage
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has CPU usage above 80% for more than 5 minutes."
+  - alert: LowMemory
+    expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Low memory on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has less than 10% memory available for more than 5 minutes."
+  - alert: LowDiskSpace
+    expr: node_filesystem_avail_bytes / node_filesystem_size_bytes * 100 < 10
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Low disk space on {{ $labels.instance }}"
+      description: "{{ $labels.instance }} has less than 10% disk space available for more than 5 minutes."

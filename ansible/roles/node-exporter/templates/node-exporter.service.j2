@@ -1,0 +1,13 @@
+[Unit]
+Description=Prometheus Node Exporter
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --name node-exporter -p {{ node_exporter_port }}:{{ node_exporter_port }} \
+  prom/node-exporter:{{ node_exporter_version }}
+ExecStop=/usr/bin/docker rm -f node-exporter
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

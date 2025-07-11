@@ -1,2 +1,49 @@
 ---
-# tasks file for ansible/roles/node-exporter
+- name: Remove Node Exporter (node_exporter_flush=true)
+  block:
+    - name: Stop Node Exporter service
+      ansible.builtin.systemd:
+        name: node-exporter
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Node Exporter container
+      ansible.builtin.command: docker rm -f node-exporter
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Node Exporter systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/node-exporter.service
+        state: absent
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Reset failed Node Exporter service
+      ansible.builtin.command: systemctl reset-failed node-exporter.service
+      ignore_errors: yes
+  when: node_exporter_flush | bool
+
+- name: Install and configure Node Exporter (node_exporter_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Node Exporter systemd unit
+      ansible.builtin.template:
+        src: node-exporter.service.j2
+        dest: /etc/systemd/system/node-exporter.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Start Node Exporter service
+      ansible.builtin.systemd:
+        name: node-exporter
+        state: started
+        enabled: yes
+  when: not node_exporter_flush | bool

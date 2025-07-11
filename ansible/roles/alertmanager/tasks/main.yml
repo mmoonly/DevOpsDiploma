@@ -1,2 +1,71 @@
 ---
-# tasks file for ansible/roles/alertmanager
+- name: Remove Alertmanager (alertmanager_flush=true)
+  block:
+    - name: Stop Alertmanager service
+      ansible.builtin.systemd:
+        name: alertmanager
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Alertmanager container
+      ansible.builtin.command: docker rm -f alertmanager
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Alertmanager directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ alertmanager_config_dir }}"
+        - "{{ alertmanager_data_dir }}"
+    - name: Remove Alertmanager systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/alertmanager.service
+        state: absent
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Reset failed Alertmanager service
+      ansible.builtin.command: systemctl reset-failed alertmanager.service
+      ignore_errors: yes
+  when: alertmanager_flush | bool
+
+- name: Install and configure Alertmanager (alertmanager_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Alertmanager directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+      loop:
+        - "{{ alertmanager_config_dir }}"
+        - "{{ alertmanager_data_dir }}"
+    - name: Copy Alertmanager configuration
+      ansible.builtin.template:
+        src: alertmanager.yml.j2
+        dest: "{{ alertmanager_config_dir }}/alertmanager.yml"
+        mode: '0644'
+    - name: Create Alertmanager systemd unit
+      ansible.builtin.template:
+        src: alertmanager.service.j2
+        dest: /etc/systemd/system/alertmanager.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes
+    - name: Start Alertmanager service
+      ansible.builtin.systemd:
+        name: alertmanager
+        state: started
+        enabled: yes
+  when: not alertmanager_flush | bool
