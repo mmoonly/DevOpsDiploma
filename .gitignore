@@ -1,0 +1,2 @@
+roles/alertmanager/vars/secrets.yml
+vault_pass.txt
