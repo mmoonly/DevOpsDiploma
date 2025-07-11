@@ -5,7 +5,7 @@ DevOps diploma project for deploying a Java-based microservices application. Imp
 - `ansible/`: Ansible playbooks, roles, and inventory for infrastructure automation.
 - `src/`: Source code of the Java application.
 - `ci/`: Jenkinsfile for CI/CD pipeline.
-- `monitoring/`: Prometheus and Grafana configurations.
+- `monitoring/`: Prometheus, Grafana and Alertmanager configurations.
 - `logging/`: ELK stack configurations for logging.
 - `docs/`: Documentation for setup, build, and deployment.
 
@@ -15,7 +15,7 @@ Work in progress. Detailed instructions for infrastructure setup, build, and dep
 ## Tools
 - **IaC**: Ansible
 - **CI/CD**: Jenkins
-- **Monitoring**: Prometheus, Grafana
+- **Monitoring**: Prometheus, Grafana, Alertmanager
 - **Logging**: ELK Stack
 - **Application**: Java (Maven-based)
 
