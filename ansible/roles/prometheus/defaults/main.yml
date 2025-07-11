@@ -1,8 +1,8 @@
 ---
-prometheus_version: "latest"
-prometheus_port: 9090
-prometheus_config_dir: "/data/prometheus/configs"
-prometheus_data_dir: "/data/prometheus/data"
-prometheus_flush: false
-alertmanager_port: 9093
-node_exporter_port: 9100
+prometheus_version     : "latest"
+prometheus_port        : 9090
+prometheus_config_dir  : "/data/prometheus/configs"
+prometheus_data_dir    : "/data/prometheus/data"
+prometheus_flush       : false
+alertmanager_port      : 9093
+node_exporter_port     : 9100

@@ -7,3 +7,15 @@
     - alertmanager
     - grafana
     - node-exporter
+
+- name: Setup Node exporter app
+  hosts: app
+  become: yes
+  roles:
+    - node-exporter
+
+- name: Setup Node exporter jenkins
+  hosts: jenkins
+  become: yes
+  roles:
+    - node-exporter

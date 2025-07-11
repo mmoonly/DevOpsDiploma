@@ -32,6 +32,9 @@
 
 - name: Install and configure Alertmanager (alertmanager_flush=false)
   block:
+    - name: Include encrypted secrets
+      ansible.builtin.include_vars:
+        file: vars/secrets.yml
     - name: Install Docker
       ansible.builtin.apt:
         name:
@@ -53,6 +56,11 @@
       ansible.builtin.template:
         src: alertmanager.yml.j2
         dest: "{{ alertmanager_config_dir }}/alertmanager.yml"
+        mode: '0644'
+    - name: Copy Alertmanager telegram template
+      ansible.builtin.copy:
+        src: telegram.tmpl
+        dest: "{{ alertmanager_config_dir }}/telegram.tmpl"
         mode: '0644'
     - name: Create Alertmanager systemd unit
       ansible.builtin.template:

@@ -3,12 +3,12 @@ groups:
   rules:
   - alert: InstanceDown
     expr: up == 0
-    for: 5m
+    for: 1m
     labels:
       severity: critical
     annotations:
       summary: "Instance {{ $labels.instance }} down"
-      description: "{{ $labels.instance }} has been down for more than 5 minutes."
+      description: "{{ $labels.instance }} has been down for more than 1 minutes."
   - alert: HighCPUUsage
     expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
     for: 5m

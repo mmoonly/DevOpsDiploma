@@ -1,4 +1,4 @@
 ---
-node_exporter_version: "latest"
-node_exporter_port: 9100
-node_exporter_flush: false
+node_exporter_version  : "latest"
+node_exporter_port     : 9100
+node_exporter_flush    : false
