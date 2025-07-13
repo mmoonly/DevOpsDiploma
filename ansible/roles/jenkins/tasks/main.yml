@@ -38,6 +38,12 @@
         state: present
         update_cache: yes
 
+    - name: Install OpenJDK
+      ansible.builtin.apt:
+        name: openjdk-17-jre
+        state: present
+        update_cache: yes
+
     - name: Ensure Jenkins home directory exists
       ansible.builtin.file:
         path: "{{ jenkins_home }}"
@@ -77,10 +83,23 @@
         src: /tmp/plugins.txt
       register: plugins_raw
 
+    - name: Download jenkins-cli.jar
+      ansible.builtin.get_url:
+        url: http://localhost:8080/jnlpJars/jenkins-cli.jar
+        dest: /tmp/jenkins-cli.jar
+
+    - name: Copy jenkins-cli.jar to container
+      ansible.builtin.command: docker cp /tmp/jenkins-cli.jar jenkins:/tmp/jenkins-cli.jar
+      register: cp_result
+      changed_when: cp_result.rc == 0
+
+    - name: Get initial admin password
+      ansible.builtin.command: docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+      register: admin_password
+      changed_when: false
+
     - name: Install Jenkins plugins
-      ansible.builtin.shell: |
-        java -jar /var/jenkins_home/war/WEB-INF/jenkins-cli.jar \
-        -s http://localhost:8080 install-plugin {{ item }} -deploy
+      ansible.builtin.command: docker exec jenkins java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 -auth admin:{{ admin_password.stdout }} install-plugin {{ item }} -deploy
       loop: "{{ plugins_raw['content'] | b64decode | split('\n') | reject('equalto', '') }}"
       register: plugin_install
       changed_when: plugin_install.rc == 0
