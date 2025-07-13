@@ -10,18 +10,19 @@
 #    - logstash
 #    - elasticsearch
 #    - kibana
-    - filebeat
+#    - filebeat
 
 - name: Setup Infrastructure to app
   hosts: app
   become: yes
   roles:
 #    - node-exporter
-    - filebeat
+#    - filebeat
 
 - name: Setup Infrastructure to jenkins
   hosts: jenkins
   become: yes
   roles:
 #    - node-exporter
-    - filebeat
+#    - filebeat
+    - jenkins

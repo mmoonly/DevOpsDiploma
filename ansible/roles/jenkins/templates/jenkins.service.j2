@@ -1,0 +1,14 @@
+[Unit]
+Description=Jenkins Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker run -d --name jenkins --network host -p {{ jenkins_port }}:8080 -p 50000:50000 --restart=on-failure --memory="{{ jenkins_memory }}" --cpus="{{ jenkins_cpus }}" -v {{ jenkins_home }}:/var/jenkins_home {{ jenkins_image }}
+ExecStop=/usr/bin/docker stop jenkins
+RemainAfterExit=yes
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

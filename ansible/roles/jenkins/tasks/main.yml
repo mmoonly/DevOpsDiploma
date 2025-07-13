@@ -1,2 +1,96 @@
----
-# tasks file for ansible/roles/jenkins
+- name: Remove Jenkins if jenkins_flush is true
+  block:
+    - name: Stop Jenkins service
+      ansible.builtin.systemd:
+        name: jenkins
+        state: stopped
+      ignore_errors: yes
+
+    - name: Remove Jenkins container
+      ansible.builtin.command: docker rm -f jenkins
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+
+    - name: Remove Jenkins home directory
+      ansible.builtin.file:
+        path: "{{ jenkins_home }}"
+        state: absent
+
+    - name: Remove Jenkins systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/jenkins.service
+        state: absent
+      notify: reload_systemd
+
+    - name: Reset failed Jenkins service
+      ansible.builtin.command: systemctl reset-failed jenkins.service
+      ignore_errors: yes
+  when: jenkins_flush | bool
+
+- name: Install and configure Jenkins if jenkins_flush is false
+  block:
+    - name: Install Docker and docker-compose
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Ensure Jenkins home directory exists
+      ansible.builtin.file:
+        path: "{{ jenkins_home }}"
+        state: directory
+        owner: 1000
+        group: 1000
+        mode: '0755'
+
+    - name: Create Jenkins systemd unit
+      ansible.builtin.template:
+        src: jenkins.service.j2
+        dest: /etc/systemd/system/jenkins.service
+        mode: '0644'
+      notify: reload_systemd
+
+    - name: Start Jenkins service
+      ansible.builtin.systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Wait for Jenkins to be accessible
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: "{{ jenkins_port }}"
+        delay: 10
+        timeout: 120
+
+    - name: Copy plugins list from control node
+      ansible.builtin.copy:
+        src: files/plugins.txt
+        dest: /tmp/plugins.txt
+
+    - name: Read plugins list
+      ansible.builtin.slurp:
+        src: /tmp/plugins.txt
+      register: plugins_raw
+
+    - name: Install Jenkins plugins
+      ansible.builtin.shell: |
+        java -jar /var/jenkins_home/war/WEB-INF/jenkins-cli.jar \
+        -s http://localhost:8080 install-plugin {{ item }} -deploy
+      loop: "{{ plugins_raw['content'] | b64decode | split('\n') | reject('equalto', '') }}"
+      register: plugin_install
+      changed_when: plugin_install.rc == 0
+      failed_when: plugin_install.rc != 0
+
+    - name: Ensure Jenkins container is running
+      ansible.builtin.command: docker ps -q -f name=jenkins
+      register: container_running
+      retries: 5
+      delay: 5
+      until: container_running.stdout != ""
+      failed_when: container_running.rc != 0
+  when: not jenkins_flush | bool

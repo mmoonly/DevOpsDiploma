@@ -2,3 +2,4 @@
 # Flush variables for roles
 #node_exporter_flush  : false
 #filebeat_flush       : false
+#jenkins_flush        : false

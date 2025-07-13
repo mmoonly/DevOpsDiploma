@@ -1,2 +1,7 @@
 ---
-# defaults file for ansible/roles/jenkins
+jenkins_flush   : false
+jenkins_home    : /opt/jenkins_home
+jenkins_port    : 8080
+jenkins_image   : jenkins/jenkins:lts-jdk17
+jenkins_memory  : "2g"
+jenkins_cpus    : "2"
