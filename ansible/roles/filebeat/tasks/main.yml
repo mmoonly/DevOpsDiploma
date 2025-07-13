@@ -56,10 +56,16 @@
         dest: /etc/systemd/system/filebeat.service
         mode: '0644'
       notify: reload_systemd
+    - name: Check Logstash availability
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"
+        port: 5044
+        state: started
+        timeout: 30
+      delegate_to: "{{ inventory_hostname }}"
     - name: Start Filebeat service
       ansible.builtin.systemd:
         name: filebeat
         state: started
         enabled: yes
   when: not filebeat_flush | bool
-

@@ -7,9 +7,9 @@
 #    - alertmanager
 #    - grafana
 #    - node-exporter
-    - logstash
-    - elasticsearch
-    - kibana
+#    - logstash
+#    - elasticsearch
+#    - kibana
     - filebeat
 
 - name: Setup Infrastructure to app
