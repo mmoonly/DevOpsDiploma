@@ -22,9 +22,7 @@
       ansible.builtin.file:
         path: /etc/systemd/system/alertmanager.service
         state: absent
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
+      notify: reload_systemd
     - name: Reset failed Alertmanager service
       ansible.builtin.command: systemctl reset-failed alertmanager.service
       ignore_errors: yes
@@ -68,9 +66,6 @@
         dest: /etc/systemd/system/alertmanager.service
         mode: '0644'
       notify: reload_systemd
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
     - name: Start Alertmanager service
       ansible.builtin.systemd:
         name: alertmanager

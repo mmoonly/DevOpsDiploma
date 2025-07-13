@@ -22,9 +22,7 @@
       ansible.builtin.file:
         path: /etc/systemd/system/grafana.service
         state: absent
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
+      notify: reload_systemd
     - name: Reset failed Grafana service
       ansible.builtin.command: systemctl reset-failed grafana.service
       ignore_errors: yes
@@ -72,9 +70,6 @@
         dest: /etc/systemd/system/grafana.service
         mode: '0644'
       notify: reload_systemd
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
     - name: Start Grafana service
       ansible.builtin.systemd:
         name: grafana

@@ -1,2 +1,66 @@
----
-# tasks file for ansible/roles/logstash
+- name: Remove Logstash (logstash_flush=true)
+  block:
+    - name: Stop Logstash service
+      ansible.builtin.systemd:
+        name: logstash
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Logstash container
+      ansible.builtin.command: docker rm -f logstash
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Logstash directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ elk_data_dir }}/logstash"
+        - "{{ elk_config_dir }}/logstash"
+    - name: Remove Logstash systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/logstash.service
+        state: absent
+      notify: reload_systemd
+    - name: Reset failed Logstash service
+      ansible.builtin.command: systemctl reset-failed logstash.service
+      ignore_errors: yes
+  when: logstash_flush | bool
+
+- name: Install and configure Logstash (logstash_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Logstash directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+      loop:
+        - "{{ elk_data_dir }}/logstash"
+        - "{{ elk_config_dir }}/logstash"
+        - "{{ elk_config_dir }}/logstash/pipeline"
+    - name: Copy Logstash pipeline configuration
+      ansible.builtin.template:
+        src: logstash.conf.j2
+        dest: "{{ elk_config_dir }}/logstash/pipeline/logstash.conf"
+        mode: '0644'
+    - name: Create Logstash systemd unit
+      ansible.builtin.template:
+        src: logstash.service.j2
+        dest: /etc/systemd/system/logstash.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Start Logstash service
+      ansible.builtin.systemd:
+        name: logstash
+        state: started
+        enabled: yes
+  when: not logstash_flush | bool

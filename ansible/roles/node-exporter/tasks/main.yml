@@ -15,9 +15,7 @@
       ansible.builtin.file:
         path: /etc/systemd/system/node-exporter.service
         state: absent
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
+      notify: reload_systemd
     - name: Reset failed Node Exporter service
       ansible.builtin.command: systemctl reset-failed node-exporter.service
       ignore_errors: yes
@@ -38,9 +36,6 @@
         dest: /etc/systemd/system/node-exporter.service
         mode: '0644'
       notify: reload_systemd
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
     - name: Start Node Exporter service
       ansible.builtin.systemd:
         name: node-exporter

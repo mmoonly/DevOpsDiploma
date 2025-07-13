@@ -1,2 +1,8 @@
 ---
-# defaults file for ansible/roles/filebeat
+filebeat_version  : "9.0.3"
+elk_data_dir      : "/data/elk"
+elk_config_dir    : "/data/elk/configs"
+logstash_host     : "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}:5044"
+filebeat_flush    : false
+filebeat_user     : "root"
+log_volume        : "/var/log:/var/log:ro"

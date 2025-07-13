@@ -1,2 +1,65 @@
----
-# tasks file for ansible/roles/filebeat
+- name: Remove Filebeat (filebeat_flush=true)
+  block:
+    - name: Stop Filebeat service
+      ansible.builtin.systemd:
+        name: filebeat
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Filebeat container
+      ansible.builtin.command: docker rm -f filebeat
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Filebeat directories
+      ansible.builtin.file:
+        path: "{{ elk_config_dir }}/filebeat"
+        state: absent
+    - name: Remove Filebeat systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/filebeat.service
+        state: absent
+      notify: reload_systemd
+    - name: Reset failed Filebeat service
+      ansible.builtin.command: systemctl reset-failed filebeat.service
+      ignore_errors: yes
+  when: filebeat_flush | bool
+
+- name: Install and configure Filebeat (filebeat_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Filebeat directory
+      ansible.builtin.file:
+        path: "{{ elk_config_dir }}/filebeat"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+    - name: Copy Filebeat configuration
+      ansible.builtin.template:
+        src: filebeat.yml.j2
+        dest: "{{ elk_config_dir }}/filebeat/filebeat.yml"
+        mode: '0644'
+    - name: Ensure log directory permissions
+      ansible.builtin.file:
+        path: /var/log
+        mode: '0755'
+        recurse: yes
+    - name: Create Filebeat systemd unit
+      ansible.builtin.template:
+        src: filebeat.service.j2
+        dest: /etc/systemd/system/filebeat.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Start Filebeat service
+      ansible.builtin.systemd:
+        name: filebeat
+        state: started
+        enabled: yes
+  when: not filebeat_flush | bool
+

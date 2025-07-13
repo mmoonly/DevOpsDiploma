@@ -1,2 +1,8 @@
 ---
-# defaults file for ansible/roles/logstash
+logstash_version    : "9.0.3"
+logstash_port       : 5044
+elasticsearch_host  : "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"
+elasticsearch_port  : 9200
+elk_data_dir        : "/data/elk"
+elk_config_dir      : "/data/elk/configs"
+logstash_flush      : false

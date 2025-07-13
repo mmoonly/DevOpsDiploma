@@ -1,0 +1,15 @@
+filebeat.inputs:
+- type: filestream
+  id: system-logs
+  enabled: true
+  paths:
+    - /var/log/syslog
+    - /var/log/auth.log
+    - /var/log/kern.log
+    - /var/log/messages
+  exclude_files:
+    - /var/log/dpkg.log
+    - /var/log/*.gz
+    - /var/log/*.1
+output.logstash:
+  hosts: ["{{ logstash_host }}"]

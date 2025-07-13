@@ -1,0 +1,15 @@
+[Unit]
+Description=Logstash Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --name logstash --network host \
+  -v {{ elk_data_dir }}/logstash:/usr/share/logstash/data \
+  -v {{ elk_config_dir }}/logstash/pipeline:/usr/share/logstash/pipeline \
+  logstash:{{ logstash_version }} /usr/local/bin/docker-entrypoint
+ExecStop=/usr/bin/docker rm -f logstash
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

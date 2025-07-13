@@ -1,0 +1,17 @@
+[Unit]
+Description=Elasticsearch Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --name elasticsearch -p {{ elasticsearch_port }}:9200 \
+-v {{ elk_data_dir }}/elasticsearch:/usr/share/elasticsearch/data \
+-v {{ elk_config_dir }}/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml \
+--env "discovery.type=single-node" \
+--env "xpack.security.enabled=false" \
+elasticsearch:{{ elasticsearch_version }}
+ExecStop=/usr/bin/docker rm -f elasticsearch
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

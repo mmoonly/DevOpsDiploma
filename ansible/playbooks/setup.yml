@@ -3,19 +3,25 @@
   hosts: monitoring
   become: yes
   roles:
-    - prometheus
-    - alertmanager
-    - grafana
-    - node-exporter
+#    - prometheus
+#    - alertmanager
+#    - grafana
+#    - node-exporter
+    - logstash
+    - elasticsearch
+    - kibana
+    - filebeat
 
-- name: Setup Node exporter app
+- name: Setup Infrastructure to app
   hosts: app
   become: yes
   roles:
-    - node-exporter
+#    - node-exporter
+    - filebeat
 
-- name: Setup Node exporter jenkins
+- name: Setup Infrastructure to jenkins
   hosts: jenkins
   become: yes
   roles:
-    - node-exporter
+#    - node-exporter
+    - filebeat

@@ -1,0 +1,15 @@
+[Unit]
+Description=Kibana Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --name kibana -p {{ kibana_port }}:5601 \
+-v {{ elk_data_dir }}/kibana:/usr/share/kibana/data \
+-v {{ elk_config_dir }}/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml \
+kibana:{{ kibana_version }}
+ExecStop=/usr/bin/docker rm -f kibana
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

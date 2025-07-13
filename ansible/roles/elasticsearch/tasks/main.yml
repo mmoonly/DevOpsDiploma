@@ -1,2 +1,66 @@
 ---
-# tasks file for ansible/roles/elasticsearch
+- name: Remove Elasticsearch (elasticsearch_flush=true)
+  block:
+    - name: Stop Elasticsearch service
+      ansible.builtin.systemd:
+        name: elasticsearch
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Elasticsearch container
+      ansible.builtin.command: docker rm -f elasticsearch
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Elasticsearch directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ elk_data_dir }}/elasticsearch"
+        - "{{ elk_config_dir }}/elasticsearch"
+    - name: Remove Elasticsearch systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/elasticsearch.service
+        state: absent
+      notify: reload_systemd
+    - name: Reset failed Elasticsearch service
+      ansible.builtin.command: systemctl reset-failed elasticsearch.service
+      ignore_errors: yes
+  when: elasticsearch_flush | bool
+
+- name: Install and configure Elasticsearch (elasticsearch_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Elasticsearch directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+      loop:
+        - "{{ elk_data_dir }}/elasticsearch"
+        - "{{ elk_config_dir }}/elasticsearch"
+    - name: Copy Elasticsearch configuration
+      ansible.builtin.template:
+        src: elasticsearch.yml.j2
+        dest: "{{ elk_config_dir }}/elasticsearch/elasticsearch.yml"
+        mode: '0644'
+    - name: Create Elasticsearch systemd unit
+      ansible.builtin.template:
+        src: elasticsearch.service.j2
+        dest: /etc/systemd/system/elasticsearch.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Start Elasticsearch service
+      ansible.builtin.systemd:
+        name: elasticsearch
+        state: started
+        enabled: yes
+  when: not elasticsearch_flush | bool

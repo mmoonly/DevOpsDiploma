@@ -1,3 +1,4 @@
 ---
 # Flush variables for roles
-node_exporter_flush: false
+#node_exporter_flush  : false
+#filebeat_flush       : false

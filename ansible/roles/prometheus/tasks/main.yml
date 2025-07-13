@@ -22,9 +22,7 @@
       ansible.builtin.file:
         path: /etc/systemd/system/prometheus.service
         state: absent
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
+      notify: reload_systemd
     - name: Reset failed Prometheus service
       ansible.builtin.command: systemctl reset-failed prometheus.service
       ignore_errors: yes
@@ -65,9 +63,6 @@
         dest: /etc/systemd/system/prometheus.service
         mode: '0644'
       notify: reload_systemd
-    - name: Reload systemd daemon
-      ansible.builtin.systemd:
-        daemon_reload: yes
     - name: Start Prometheus service
       ansible.builtin.systemd:
         name: prometheus

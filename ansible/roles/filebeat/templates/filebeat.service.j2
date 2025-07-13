@@ -1,0 +1,17 @@
+[Unit]
+Description=Filebeat Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --name filebeat \
+  --network host \
+  -v {{ log_volume }} \
+  -v {{ elk_config_dir }}/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml \
+  --user={{ filebeat_user }} \
+  elastic/filebeat:{{ filebeat_version }} /usr/local/bin/docker-entrypoint
+ExecStop=/usr/bin/docker rm -f filebeat
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

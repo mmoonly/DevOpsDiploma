@@ -1,2 +1,66 @@
 ---
-# tasks file for ansible/roles/kibana
+- name: Remove Kibana (kibana_flush=true)
+  block:
+    - name: Stop Kibana service
+      ansible.builtin.systemd:
+        name: kibana
+        state: stopped
+      ignore_errors: yes
+    - name: Remove Kibana container
+      ansible.builtin.command: docker rm -f kibana
+      ignore_errors: yes
+      register: container_removed
+      changed_when: "'No such container' not in container_removed.stderr"
+    - name: Remove Kibana directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ elk_data_dir }}/kibana"
+        - "{{ elk_config_dir }}/kibana"
+    - name: Remove Kibana systemd unit
+      ansible.builtin.file:
+        path: /etc/systemd/system/kibana.service
+        state: absent
+      notify: reload_systemd
+    - name: Reset failed Kibana service
+      ansible.builtin.command: systemctl reset-failed kibana.service
+      ignore_errors: yes
+  when: kibana_flush | bool
+
+- name: Install and configure Kibana (kibana_flush=false)
+  block:
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+    - name: Create Kibana directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+      loop:
+        - "{{ elk_data_dir }}/kibana"
+        - "{{ elk_config_dir }}/kibana"
+    - name: Copy Kibana configuration
+      ansible.builtin.template:
+        src: kibana.yml.j2
+        dest: "{{ elk_config_dir }}/kibana/kibana.yml"
+        mode: '0644'
+    - name: Create Kibana systemd unit
+      ansible.builtin.template:
+        src: kibana.service.j2
+        dest: /etc/systemd/system/kibana.service
+        mode: '0644'
+      notify: reload_systemd
+    - name: Start Kibana service
+      ansible.builtin.systemd:
+        name: kibana
+        state: started
+        enabled: yes
+  when: not kibana_flush | bool
