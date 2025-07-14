@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/2 * * * *')  // Проверка каждые 2 минуты
+        pollSCM('H/2 * * * *')
     }
 
     environment {
