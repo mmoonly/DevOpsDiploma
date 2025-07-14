@@ -1,8 +1,8 @@
 ---
-- name: Setup Monitoring and Logging Server
-  hosts: monitoring
-  become: yes
-  roles:
+#- name: Setup Monitoring and Logging Server
+#  hosts: monitoring
+#  become: yes
+#  roles:
 #    - prometheus
 #    - alertmanager
 #    - grafana
@@ -12,10 +12,10 @@
 #    - kibana
 #    - filebeat
 
-- name: Setup Infrastructure to app
-  hosts: app
-  become: yes
-  roles:
+#- name: Setup Infrastructure to app
+#  hosts: app
+#  become: yes
+#  roles:
 #    - node-exporter
 #    - filebeat
 

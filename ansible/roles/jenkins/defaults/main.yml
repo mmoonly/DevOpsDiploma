@@ -1,7 +1,11 @@
 ---
-jenkins_flush   : false
-jenkins_home    : /opt/jenkins_home
-jenkins_port    : 8080
-jenkins_image   : jenkins/jenkins:lts-jdk17
-jenkins_memory  : "2g"
-jenkins_cpus    : "2"
+jenkins_flush          : false
+jenkins_home           : /opt/jenkins_home
+jenkins_port           : 8080
+jenkins_image          : jenkins/jenkins:lts-jdk21
+jenkins_memory         : "2g"
+jenkins_cpus           : "2"
+use_prepared_home      : true
+prepared_home_archive  : /opt/jenkins_home_prepared.tar.gz
+archive_on_host        : /home/ubuntu/DevOpsDiploma/ci/jenkins_home_prepared.tar.gz
+

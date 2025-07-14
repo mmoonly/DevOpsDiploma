@@ -3,10 +3,7 @@ DevOps diploma project for deploying a Java-based microservices application. Imp
 
 ## Project Structure
 - `ansible/`: Ansible playbooks, roles, and inventory for infrastructure automation.
-- `src/`: Source code of the Java application.
-- `ci/`: Jenkinsfile for CI/CD pipeline.
-- `monitoring/`: Prometheus, Grafana and Alertmanager configurations.
-- `logging/`: ELK stack configurations for logging.
+- `java-app/`: Source code of the Java application.
 - `docs/`: Documentation for setup, build, and deployment.
 
 ## Setup Instructions

@@ -17,6 +17,11 @@
         path: "{{ jenkins_home }}"
         state: absent
 
+    - name: Remove archive
+      ansible.builtin.file:
+        path: "{{ prepared_home_archive }}"
+        state: absent
+
     - name: Remove Jenkins systemd unit
       ansible.builtin.file:
         path: /etc/systemd/system/jenkins.service
@@ -25,6 +30,24 @@
 
     - name: Reset failed Jenkins service
       ansible.builtin.command: systemctl reset-failed jenkins.service
+      ignore_errors: yes
+
+    - name: Remove Maven installation
+      block:
+        - name: Remove Maven symlink
+          ansible.builtin.file:
+            path: /usr/bin/mvn
+            state: absent
+
+        - name: Remove Maven directory
+          ansible.builtin.file:
+            path: /usr/share/maven
+            state: absent
+
+        - name: Remove Maven archive
+          ansible.builtin.file:
+            path: /tmp/apache-maven-3.9.9-bin.tar.gz
+            state: absent
       ignore_errors: yes
   when: jenkins_flush | bool
 
@@ -40,9 +63,34 @@
 
     - name: Install OpenJDK
       ansible.builtin.apt:
-        name: openjdk-17-jre
+        name: openjdk-21-jre
         state: present
         update_cache: yes
+
+    - name: Install Maven 3.9.9
+      block:
+        - name: Download Maven 3.9.9
+          ansible.builtin.get_url:
+            url: https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz
+            dest: /tmp/apache-maven-3.9.9-bin.tar.gz
+            mode: '0644'
+
+        - name: Extract Maven 3.9.9
+          ansible.builtin.unarchive:
+            src: /tmp/apache-maven-3.9.9-bin.tar.gz
+            dest: /usr/share/
+            remote_src: yes
+
+        - name: Move Maven directory
+          ansible.builtin.command: mv /usr/share/apache-maven-3.9.9 /usr/share/maven
+          args:
+            creates: /usr/share/maven
+
+        - name: Create symlink for mvn
+          ansible.builtin.file:
+            src: /usr/share/maven/bin/mvn
+            dest: /usr/bin/mvn
+            state: link
 
     - name: Ensure Jenkins home directory exists
       ansible.builtin.file:
@@ -51,6 +99,24 @@
         owner: 1000
         group: 1000
         mode: '0755'
+
+    - name: Install Jenkins from prepared files if use_prepared_home is true
+      block:
+        - name: Copy Jenkins home archive to remote host
+          ansible.builtin.copy:
+            src: "{{ archive_on_host }}"
+            dest: "{{ prepared_home_archive }}"
+            mode: '0644'
+
+        - name: Extract prepared jenkins_home if use_prepared_home is true
+          ansible.builtin.unarchive:
+            src: "{{ prepared_home_archive }}"
+            dest: /opt/
+            owner: 1000
+            group: 1000
+            mode: '0755'
+            remote_src: yes
+      when: use_prepared_home | bool
 
     - name: Create Jenkins systemd unit
       ansible.builtin.template:
@@ -72,38 +138,6 @@
         port: "{{ jenkins_port }}"
         delay: 10
         timeout: 120
-
-    - name: Copy plugins list from control node
-      ansible.builtin.copy:
-        src: files/plugins.txt
-        dest: /tmp/plugins.txt
-
-    - name: Read plugins list
-      ansible.builtin.slurp:
-        src: /tmp/plugins.txt
-      register: plugins_raw
-
-    - name: Download jenkins-cli.jar
-      ansible.builtin.get_url:
-        url: http://localhost:8080/jnlpJars/jenkins-cli.jar
-        dest: /tmp/jenkins-cli.jar
-
-    - name: Copy jenkins-cli.jar to container
-      ansible.builtin.command: docker cp /tmp/jenkins-cli.jar jenkins:/tmp/jenkins-cli.jar
-      register: cp_result
-      changed_when: cp_result.rc == 0
-
-    - name: Get initial admin password
-      ansible.builtin.command: docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-      register: admin_password
-      changed_when: false
-
-    - name: Install Jenkins plugins
-      ansible.builtin.command: docker exec jenkins java -jar /tmp/jenkins-cli.jar -s http://localhost:8080 -auth admin:{{ admin_password.stdout }} install-plugin {{ item }} -deploy
-      loop: "{{ plugins_raw['content'] | b64decode | split('\n') | reject('equalto', '') }}"
-      register: plugin_install
-      changed_when: plugin_install.rc == 0
-      failed_when: plugin_install.rc != 0
 
     - name: Ensure Jenkins container is running
       ansible.builtin.command: docker ps -q -f name=jenkins
