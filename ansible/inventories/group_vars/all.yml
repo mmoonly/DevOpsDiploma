@@ -1,11 +1,11 @@
 ---
 # Flush variables for roles
-prometheus_flush     : false
-alertmanager_flush   : false
-grafana_flush        : false
-node_exporter_flush  : false
+prometheus_flush     : true
+alertmanager_flush   : true
+grafana_flush        : true
+node_exporter_flush  : true
 elasticsearch_flush  : true
 logstash_flush       : true
 kibana_flush         : true
 filebeat_flush       : true
-jenkins_flush        : false
+jenkins_flush        : true

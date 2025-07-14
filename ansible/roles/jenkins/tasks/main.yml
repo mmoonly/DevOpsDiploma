@@ -1,3 +1,4 @@
+---
 - name: Remove Jenkins if jenkins_flush is true
   block:
     - name: Stop Jenkins service
@@ -5,45 +6,37 @@
         name: jenkins
         state: stopped
       ignore_errors: yes
-
     - name: Remove Jenkins container
       ansible.builtin.command: docker rm -f jenkins
       ignore_errors: yes
       register: container_removed
       changed_when: "'No such container' not in container_removed.stderr"
-
     - name: Remove Jenkins home directory
       ansible.builtin.file:
         path: "{{ jenkins_home }}"
         state: absent
-
     - name: Remove archive
       ansible.builtin.file:
         path: "{{ prepared_home_archive }}"
         state: absent
-
     - name: Remove Jenkins systemd unit
       ansible.builtin.file:
         path: /etc/systemd/system/jenkins.service
         state: absent
       notify: reload_systemd
-
     - name: Reset failed Jenkins service
       ansible.builtin.command: systemctl reset-failed jenkins.service
       ignore_errors: yes
-
     - name: Remove Maven installation
       block:
         - name: Remove Maven symlink
           ansible.builtin.file:
             path: /usr/bin/mvn
             state: absent
-
         - name: Remove Maven directory
           ansible.builtin.file:
             path: /usr/share/maven
             state: absent
-
         - name: Remove Maven archive
           ansible.builtin.file:
             path: /tmp/apache-maven-3.9.9-bin.tar.gz
@@ -60,13 +53,11 @@
           - docker-compose
         state: present
         update_cache: yes
-
     - name: Install OpenJDK
       ansible.builtin.apt:
         name: openjdk-21-jre
         state: present
         update_cache: yes
-
     - name: Install Maven 3.9.9
       block:
         - name: Download Maven 3.9.9
@@ -74,24 +65,20 @@
             url: https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz
             dest: /tmp/apache-maven-3.9.9-bin.tar.gz
             mode: '0644'
-
         - name: Extract Maven 3.9.9
           ansible.builtin.unarchive:
             src: /tmp/apache-maven-3.9.9-bin.tar.gz
             dest: /usr/share/
             remote_src: yes
-
         - name: Move Maven directory
           ansible.builtin.command: mv /usr/share/apache-maven-3.9.9 /usr/share/maven
           args:
             creates: /usr/share/maven
-
         - name: Create symlink for mvn
           ansible.builtin.file:
             src: /usr/share/maven/bin/mvn
             dest: /usr/bin/mvn
             state: link
-
     - name: Ensure Jenkins home directory exists
       ansible.builtin.file:
         path: "{{ jenkins_home }}"
@@ -99,7 +86,6 @@
         owner: 1000
         group: 1000
         mode: '0755'
-
     - name: Install Jenkins from prepared files if use_prepared_home is true
       block:
         - name: Copy Jenkins home archive to remote host
@@ -107,7 +93,6 @@
             src: "{{ archive_on_host }}"
             dest: "{{ prepared_home_archive }}"
             mode: '0644'
-
         - name: Extract prepared jenkins_home if use_prepared_home is true
           ansible.builtin.unarchive:
             src: "{{ prepared_home_archive }}"
@@ -117,28 +102,24 @@
             mode: '0755'
             remote_src: yes
       when: use_prepared_home | bool
-
     - name: Create Jenkins systemd unit
       ansible.builtin.template:
         src: jenkins.service.j2
         dest: /etc/systemd/system/jenkins.service
         mode: '0644'
       notify: reload_systemd
-
     - name: Start Jenkins service
       ansible.builtin.systemd:
         name: jenkins
         state: started
         enabled: yes
         daemon_reload: yes
-
     - name: Wait for Jenkins to be accessible
       ansible.builtin.wait_for:
         host: "{{ ansible_host }}"
         port: "{{ jenkins_port }}"
         delay: 10
         timeout: 120
-
     - name: Ensure Jenkins container is running
       ansible.builtin.command: docker ps -q -f name=jenkins
       register: container_running

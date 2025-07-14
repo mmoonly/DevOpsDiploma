@@ -1,28 +1,33 @@
 ---
-#- name: Setup Monitoring and Logging Server
-#  hosts: monitoring
-#  become: yes
-#  roles:
-#    - prometheus
-#    - alertmanager
-#    - grafana
-#    - node-exporter
-#    - logstash
-#    - elasticsearch
-#    - kibana
-#    - filebeat
+- name: Setup Monitoring and Logging Server
+  hosts: monitoring
+  become: yes
+  roles:
+    - prometheus
+    - alertmanager
+    - grafana
+    - node-exporter
+    - logstash
+    - elasticsearch
+    - kibana
+    - filebeat
 
-#- name: Setup Infrastructure to app
-#  hosts: app
-#  become: yes
-#  roles:
-#    - node-exporter
-#    - filebeat
+- name: Setup Infrastructure to app
+  hosts: app
+  become: yes
+  roles:
+    - node-exporter
+    - filebeat
 
 - name: Setup Infrastructure to jenkins
   hosts: jenkins
   become: yes
   roles:
-#    - node-exporter
-#    - filebeat
+    - node-exporter
+    - filebeat
+
+- name: Setuv Jenkins
+  hosts: jenkins
+  become: yes
+  roles:
     - jenkins
