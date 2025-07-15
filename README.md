@@ -19,4 +19,4 @@ Work in progress. Detailed instructions for infrastructure setup, build, and dep
 ## Status
 Initial structure setup. Ongoing development of Ansible playbooks, CI/CD pipeline, and monitoring/logging configurations.
 
-HEHE
+
