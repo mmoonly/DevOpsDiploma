@@ -5,6 +5,7 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
+Environment="TZ=Europe/Minsk"
 ExecStartPre=/usr/bin/docker rm -f jenkins
 ExecStart=/usr/bin/docker run -d --name jenkins --network host -p {{ jenkins_port }}:8080 -p 50000:50000 --restart=on-failure --memory="{{ jenkins_memory }}" --cpus="{{ jenkins_cpus }}" -v {{ jenkins_home }}:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v /usr/share/maven:/usr/share/maven -v /usr/bin/docker:/usr/bin/docker -u 1000:110 {{ jenkins_image }}
 ExecStop=/usr/bin/docker stop jenkins
