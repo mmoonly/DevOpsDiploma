@@ -12,7 +12,6 @@ Hey there, fellow code wrangler! This is **DevOpsDiploma**—my diploma project 
   - **`playbooks/setup.yml`**: The main playbook that kicks off this wild ride.
   - **`roles/`**: Roles for each service (from `alertmanager` to `prometheus`)—each packed with `tasks/`, `templates/`, and more goodies.
 - **`ci/`**: Home to `jenkins_home_prepared.tar.gz`—hidden from Git thanks to `.gitignore`!
-- **`docs/`**: Empty for now, but I’ll fill it with epic tales soon!
 - **`java-app/`**: The Java app code and Dockerfile for container magic.
   - `Dockerfile`: The recipe to brew this chaos into a container.
   - `pom.xml`: Maven file to keep the compiler happy.
