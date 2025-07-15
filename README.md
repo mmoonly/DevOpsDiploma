@@ -1,6 +1,6 @@
 # DevOpsDiploma 🌟 — Welcome to My DevOps Playground!
 
-Hey there, fellow code wrangler! This is **DevOpsDiploma**—my diploma project where I’ve tamed a Java microservices app with some serious automation mojo. I’ve thrown in **IaC** with Ansible, rigged up a slick **CI/CD pipeline** with Jenkins, and stuffed it with monitoring/logging goodness using Prometheus, Grafana, Alertmanager, and the ELK Stack (Elasticsearch, Logstash, Kibana, Filebeat).
+This is **DevOpsDiploma**—my diploma project where I’ve tamed a Java microservices app. I’ve thrown in **IaC** with Ansible, rigged up a slick **CI/CD pipeline** with Jenkins, and stuffed it with monitoring/logging goodness using Prometheus, Grafana, Alertmanager, and the ELK Stack (Elasticsearch, Logstash, Kibana, Filebeat).
 
 ## What’s Inside? 📦
 
