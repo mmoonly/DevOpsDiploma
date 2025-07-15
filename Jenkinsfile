@@ -8,25 +8,14 @@ pipeline {
     environment {
         DOCKER_IMAGE = "mmoonly/simple-java-maven-app:${BUILD_NUMBER}"
         REGISTRY_CREDENTIALS_ID = 'docker-creds'
+        DEPLOY_SERVER = "ubuntu@192.168.110.74"
         DEPLOY_SERVER = "ubuntu@192.168.100.13"
         SSH_KEY = credentials('jenkins-to-app-ssh')
-        JENKINS_API_CREDENTIALS = credentials('jenkins-api-token')
     }
 
     stages {
-        stage('Initialize') {
+        stage('Checkout') {
             steps {
-                script {
-                    if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger').size() == 0) {
-                        echo "First run or manual trigger — resetting pollSCM history!"
-                        withCredentials([string(credentialsId: 'jenkins-api-token', variable: 'API_TOKEN')]) {
-                            sh '''
-                                curl -u admin:$API_TOKEN -X POST http://localhost:8080/job/${JOB_NAME}/doDeleteAllBuilds || true
-                                curl -u admin:$API_TOKEN -X POST --data '<project><triggers><hudson.triggers.SCMTrigger><spec>H/1 * * * *</spec></hudson.triggers.SCMTrigger></triggers></project>' http://localhost:8080/job/${JOB_NAME}/config.xml || true
-                            '''
-                        }
-                    }
-                }
                 deleteDir()
                 git branch: 'main', url: 'https://github.com/mmoonly/DevOpsDiploma.git'
                 sh 'git submodule update --init --remote'
