@@ -52,19 +52,19 @@ Hey there, fellow code wrangler! This is **DevOpsDiploma**—my diploma project 
          jenkins:
            hosts:
              jenkins_server:
-               ansible_host: 192.168.110.67
+               ansible_host: 192.168.100.15
                ansible_user: ubuntu
                ansible_ssh_private_key_file: ~/.ssh/id_rsa
          app:
            hosts:
              app_server:
-               ansible_host: 192.168.110.74
+               ansible_host: 192.168.100.13
                ansible_user: ubuntu
                ansible_ssh_private_key_file: ~/.ssh/id_rsa
          monitoring:
            hosts:
              monitoring_server:
-               ansible_host: 192.168.110.71
+               ansible_host: 192.168.100.14
                ansible_user: ubuntu
                ansible_ssh_private_key_file: ~/.ssh/id_rsa
      ```
@@ -73,7 +73,7 @@ Hey there, fellow code wrangler! This is **DevOpsDiploma**—my diploma project 
    ANSIBLE_VAULT_PASSWORD_FILE=vault_pass.txt ansible-playbook -i ansible/inventories/hosts.yml ansible/playbooks/setup.yml
    ```
 5. **Boot Up Jenkins CI/CD**:
-   - Hit `http://192.168.110.67:8080` to check it out.
+   - Hit `http://192.168.100.15:8080` to check it out.
    - Set up creds (`docker-creds`, `jenkins-to-app-ssh`, `telegram-bot-token`, `telegram-chat-id`) in Jenkins.
    - `Jenkinsfile` will ping the code every minute with `pollSCM`.
 
@@ -99,23 +99,23 @@ Hey there, fellow code wrangler! This is **DevOpsDiploma**—my diploma project 
   - `Test`: Hammers the tests.
   - `Archive Artifacts`: Packs up the `.jar`.
   - `Docker Build & Push`: Ships the image to Docker Hub.
-  - `Deploy to App Server`: Drops it on `192.168.110.74:8080`.
+  - `Deploy to App Server`: Drops it on `192.168.100.13:8080`.
   - `Notify`: Pings Telegram with updates.
 - **Trigger**: `pollSCM('H/1 * * * *')`—checks for changes every minute.
 
 ## Monitoring and Logging 📊
 - **Prometheus**: Sucks up metrics from `node-exporter`.
 - **Alertmanager**: Blasts alerts to Telegram (don’t sleep through them!).
-- **Grafana**: Sweet visuals at `http://192.168.110.71:3000`.
+- **Grafana**: Sweet visuals at `http://192.168.100.14:3000`.
 - **ELK Stack**:
-  - `Elasticsearch`: Stores logs at `http://192.168.110.71:9200`.
+  - `Elasticsearch`: Stores logs at `http://192.168.100.14:9200`.
   - `Logstash`: Filters on port `5044`.
-  - `Kibana`: Paints logs at `http://192.168.110.71:5601`.
+  - `Kibana`: Paints logs at `http://192.168.100.14:5601`.
   - `Filebeat`: Scoops logs from `/var/log`.
 - **Where to Peek**:
-  - Prometheus: `http://192.168.110.71:9090`
-  - Grafana: `http://192.168.110.71:3000`
-  - Kibana: `http://192.168.110.71:5601`
+  - Prometheus: `http://192.168.100.14:9090`
+  - Grafana: `http://192.168.100.14:3000`
+  - Kibana: `http://192.168.100.14:5601`
 
 ## Tools 🛠️
 - **IaC**: Ansible—my trusty sidekick.

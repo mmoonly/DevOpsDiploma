@@ -8,7 +8,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = "mmoonly/simple-java-maven-app:${BUILD_NUMBER}"
         REGISTRY_CREDENTIALS_ID = 'docker-creds'
-        DEPLOY_SERVER = "ubuntu@192.168.110.74"
+        DEPLOY_SERVER = "ubuntu@192.168.100.13"
         SSH_KEY = credentials('jenkins-to-app-ssh')
     }
 
