@@ -35,7 +35,7 @@
         file: vars/secrets.yml
       ignore_errors: yes
       no_log: true
-  - name: Install Docker
+    - name: Install Docker
       ansible.builtin.apt:
         name:
           - docker.io

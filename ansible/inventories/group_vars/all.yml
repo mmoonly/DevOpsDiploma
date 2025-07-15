@@ -23,19 +23,16 @@ grafana_config_dir       : "/data/grafana/configs"
 grafana_provisioning_dir : "/data/grafana/configs/provisioning"
 grafana_data_dir         : "/data/grafana/data"
 prometheus_host          : "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"
-prometheus_port          : 9090
 
 # Node Exporter configuration
 node_exporter_version    : "latest"
 node_exporter_port       : 9100
-node_exporter_flush      : false
 
 # Prometheus configuration
 prometheus_version       : "latest"
 prometheus_port          : 9090
 prometheus_config_dir    : "/data/prometheus/configs"
 prometheus_data_dir      : "/data/prometheus/data"
-prometheus_flush         : false
 
 # Jenkins configuration
 jenkins_home             : /opt/jenkins_home
@@ -55,7 +52,6 @@ elasticsearch_host       : "{{ hostvars[groups['monitoring'][0]]['ansible_host']
 # Logstash configuration
 logstash_version         : "9.0.3"
 logstash_port            : 5044
-logstash_flush           : false
 
 # Elasticsearch configuration
 elasticsearch_version    : "9.0.3"
