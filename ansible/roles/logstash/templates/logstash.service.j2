@@ -4,11 +4,12 @@ After=docker.service
 Requires=docker.service
 
 [Service]
+ExecStartPre=/usr/bin/docker rm -f logstash
 ExecStart=/usr/bin/docker run --name logstash --network host \
   -v {{ elk_data_dir }}/logstash:/usr/share/logstash/data \
   -v {{ elk_config_dir }}/logstash/pipeline:/usr/share/logstash/pipeline \
   logstash:{{ logstash_version }} /usr/local/bin/docker-entrypoint
-ExecStop=/usr/bin/docker rm -f logstash
+ExecStop=/usr/bin/docker stop logstash
 Restart=always
 
 [Install]

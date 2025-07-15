@@ -4,13 +4,14 @@ After=docker.service
 Requires=docker.service
 
 [Service]
+ExecStartPre=/usr/bin/docker rm -f filebeat
 ExecStart=/usr/bin/docker run --name filebeat \
   --network host \
   -v {{ log_volume }} \
   -v {{ elk_config_dir }}/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml \
   --user={{ filebeat_user }} \
   elastic/filebeat:{{ filebeat_version }} /usr/share/filebeat/filebeat -e
-ExecStop=/usr/bin/docker rm -f filebeat
+ExecStop=/usr/bin/docker stop filebeat
 Restart=always
 
 [Install]

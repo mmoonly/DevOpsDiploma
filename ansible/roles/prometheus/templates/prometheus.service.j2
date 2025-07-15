@@ -4,11 +4,12 @@ After=docker.service
 Requires=docker.service
 
 [Service]
+ExecStartPre=/usr/bin/docker rm -f prometheus
 ExecStart=/usr/bin/docker run --name prometheus -p {{ prometheus_port }}:{{ prometheus_port }} \
   -v {{ prometheus_config_dir }}:/etc/prometheus \
   -v {{ prometheus_data_dir }}:/prometheus \
   prom/prometheus:{{ prometheus_version }}
-ExecStop=/usr/bin/docker rm -f prometheus
+ExecStop=/usr/bin/docker stop prometheus
 Restart=always
 
 [Install]

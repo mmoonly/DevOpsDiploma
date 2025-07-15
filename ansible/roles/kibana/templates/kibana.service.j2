@@ -4,11 +4,12 @@ After=docker.service
 Requires=docker.service
 
 [Service]
+ExecStartPre=/usr/bin/docker rm -f kibana
 ExecStart=/usr/bin/docker run --name kibana -p {{ kibana_port }}:5601 \
--v {{ elk_data_dir }}/kibana:/usr/share/kibana/data \
--v {{ elk_config_dir }}/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml \
-kibana:{{ kibana_version }}
-ExecStop=/usr/bin/docker rm -f kibana
+  -v {{ elk_data_dir }}/kibana:/usr/share/kibana/data \
+  -v {{ elk_config_dir }}/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml \
+  kibana:{{ kibana_version }}
+ExecStop=/usr/bin/docker stop kibana
 Restart=always
 
 [Install]

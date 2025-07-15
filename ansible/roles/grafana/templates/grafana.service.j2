@@ -4,12 +4,13 @@ After=docker.service
 Requires=docker.service
 
 [Service]
+ExecStartPre=/usr/bin/docker rm -f grafana
 ExecStart=/usr/bin/docker run --name grafana -p {{ grafana_port }}:{{ grafana_port }} \
   -v {{ grafana_provisioning_dir }}:/etc/grafana/provisioning \
   -v {{ grafana_config_dir }}:/dashboards \
   -v {{ grafana_data_dir }}:/var/lib/grafana \
   grafana/grafana:{{ grafana_version }}
-ExecStop=/usr/bin/docker rm -f grafana
+ExecStop=/usr/bin/docker stop grafana
 Restart=always
 
 [Install]
