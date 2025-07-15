@@ -33,7 +33,9 @@
     - name: Include encrypted secrets
       ansible.builtin.include_vars:
         file: vars/secrets.yml
-    - name: Install Docker
+      ignore_errors: yes
+      no_log: true
+  - name: Install Docker
       ansible.builtin.apt:
         name:
           - docker.io

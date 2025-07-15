@@ -93,7 +93,7 @@
             src: "{{ archive_on_host }}"
             dest: "{{ prepared_home_archive }}"
             mode: '0644'
-        - name: Extract prepared jenkins_home if use_prepared_home is true
+        - name: Extract prepared jenkins_home
           ansible.builtin.unarchive:
             src: "{{ prepared_home_archive }}"
             dest: /opt/
