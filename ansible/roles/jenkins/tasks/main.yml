@@ -58,6 +58,7 @@
         name: openjdk-21-jre
         state: present
         update_cache: yes
+
     - name: Install Maven 3.9.9
       block:
         - name: Download Maven 3.9.9
@@ -79,6 +80,7 @@
             src: /usr/share/maven/bin/mvn
             dest: /usr/bin/mvn
             state: link
+
     - name: Ensure Jenkins home directory exists
       ansible.builtin.file:
         path: "{{ jenkins_home }}"
@@ -86,6 +88,7 @@
         owner: 1000
         group: 1000
         mode: '0755'
+
     - name: Install Jenkins from prepared files if use_prepared_home is true
       block:
         - name: Copy Jenkins home archive to remote host
@@ -102,6 +105,7 @@
             mode: '0755'
             remote_src: yes
       when: use_prepared_home | bool
+
     - name: Create Jenkins systemd unit
       ansible.builtin.template:
         src: jenkins.service.j2
