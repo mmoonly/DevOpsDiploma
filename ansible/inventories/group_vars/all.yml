@@ -1,11 +1,70 @@
 ---
 # Flush variables for roles
-prometheus_flush     : false
-alertmanager_flush   : false
-grafana_flush        : false
-node_exporter_flush  : false
-elasticsearch_flush  : false
-logstash_flush       : false
-kibana_flush         : false
-filebeat_flush       : false
-jenkins_flush        : false
+prometheus_flush         : false
+alertmanager_flush       : false
+grafana_flush            : false
+node_exporter_flush      : false
+elasticsearch_flush      : false
+logstash_flush           : false
+kibana_flush             : false
+filebeat_flush           : false
+jenkins_flush            : false
+
+# Alertmanager configuration
+alertmanager_version     : "latest"
+alertmanager_port        : 9093
+alertmanager_config_dir  : "/data/alertmanager/configs"
+alertmanager_data_dir    : "/data/alertmanager/data"
+
+# Grafana configuration
+grafana_version          : "latest"
+grafana_port             : 3000
+grafana_config_dir       : "/data/grafana/configs"
+grafana_provisioning_dir : "/data/grafana/configs/provisioning"
+grafana_data_dir         : "/data/grafana/data"
+prometheus_host          : "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"
+prometheus_port          : 9090
+
+# Node Exporter configuration
+node_exporter_version    : "latest"
+node_exporter_port       : 9100
+node_exporter_flush      : false
+
+# Prometheus configuration
+prometheus_version       : "latest"
+prometheus_port          : 9090
+prometheus_config_dir    : "/data/prometheus/configs"
+prometheus_data_dir      : "/data/prometheus/data"
+prometheus_flush         : false
+
+# Jenkins configuration
+jenkins_home             : /opt/jenkins_home
+jenkins_port             : 8080
+jenkins_image            : jenkins/jenkins:lts-jdk21
+jenkins_memory           : "2g"
+jenkins_cpus             : "2"
+use_prepared_home        : true
+prepared_home_archive    : /opt/jenkins_home_prepared.tar.gz
+archive_on_host          : /home/ubuntu/DevOpsDiploma/ci/jenkins_home_prepared.tar.gz
+
+# Kibana configuration
+kibana_version           : "9.0.3"
+kibana_port              : 5601
+elasticsearch_host       : "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"
+
+# Logstash configuration
+logstash_version         : "9.0.3"
+logstash_port            : 5044
+logstash_flush           : false
+
+# Elasticsearch configuration
+elasticsearch_version    : "9.0.3"
+elasticsearch_port       : 9200
+elk_data_dir             : "/data/elk"
+elk_config_dir           : "/data/elk/configs"
+
+# Filebeat configuration
+filebeat_version         : "9.0.3"
+logstash_host            : "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}:5044"
+filebeat_user            : "root"
+log_volume               : "/var/log:/var/log:ro"
