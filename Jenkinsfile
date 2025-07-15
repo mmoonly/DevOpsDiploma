@@ -20,10 +20,10 @@ pipeline {
                     if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger').size() == 0) {
                         echo "First run or manual trigger — resetting pollSCM history!"
                         withCredentials([string(credentialsId: 'jenkins-api-token', variable: 'API_TOKEN')]) {
-                            sh """
-                                curl -X POST http://localhost:8080/job/${JOB_NAME}/doDeleteAllBuilds --user admin:\${API_TOKEN} || true
-                                curl -X POST http://localhost:8080/job/${JOB_NAME}/config.xml -d '<project><triggers><hudson.triggers.SCMTrigger><spec>H/1 * * * *</spec></hudson.triggers.SCMTrigger></triggers></project>' --user admin:\${API_TOKEN} || true
-                            """
+                            sh '''
+                                curl -u admin:$API_TOKEN -X POST http://localhost:8080/job/${JOB_NAME}/doDeleteAllBuilds || true
+                                curl -u admin:$API_TOKEN -X POST --data '<project><triggers><hudson.triggers.SCMTrigger><spec>H/1 * * * *</spec></hudson.triggers.SCMTrigger></triggers></project>' http://localhost:8080/job/${JOB_NAME}/config.xml || true
+                            '''
                         }
                     }
                 }
