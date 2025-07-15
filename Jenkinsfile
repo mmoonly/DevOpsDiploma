@@ -10,7 +10,7 @@ pipeline {
         REGISTRY_CREDENTIALS_ID = 'docker-creds'
         DEPLOY_SERVER = "ubuntu@192.168.100.13"
         SSH_KEY = credentials('jenkins-to-app-ssh')
-        JENKINS_API_TOKEN = credentials('jenkins-api-token')
+        JENKINS_API_CREDENTIALS = credentials('jenkins-api-token')
     }
 
     stages {
@@ -19,8 +19,12 @@ pipeline {
                 script {
                     if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger').size() == 0) {
                         echo "First run or manual trigger — resetting pollSCM history!"
-                        sh "curl -X POST http://localhost:8080/job/${JOB_NAME}/doDeleteAllBuilds --user admin:${JENKINS_API_TOKEN} || true"
-                        sh "curl -X POST http://localhost:8080/job/${JOB_NAME}/config.xml -d '<project><triggers><hudson.triggers.SCMTrigger><spec>H/1 * * * *</spec></hudson.triggers.SCMTrigger></triggers></project>' --user admin:${JENKINS_API_TOKEN} || true"
+                        withCredentials([string(credentialsId: 'jenkins-api-token', variable: 'API_TOKEN')]) {
+                            sh """
+                                curl -X POST http://localhost:8080/job/${JOB_NAME}/doDeleteAllBuilds --user admin:\${API_TOKEN} || true
+                                curl -X POST http://localhost:8080/job/${JOB_NAME}/config.xml -d '<project><triggers><hudson.triggers.SCMTrigger><spec>H/1 * * * *</spec></hudson.triggers.SCMTrigger></triggers></project>' --user admin:\${API_TOKEN} || true
+                            """
+                        }
                     }
                 }
                 deleteDir()
@@ -99,7 +103,7 @@ pipeline {
             steps {
                 script {
                     def status = currentBuild.currentResult
-                    def msg = "${status == 'SUCCESS' ? '✅' : '❌'} CI/CD завершён: билд #${BUILD_NUMBER}, образ: $DOCKER_IMAGE"
+                    def msg = "${status == 'SUCCESS' ? '✅' : '❌'} CI/CD done: build #${BUILD_NUMBER}, image: $DOCKER_IMAGE"
                     withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TOKEN')]) {
                         withCredentials([string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID')]) {
                             sh """
