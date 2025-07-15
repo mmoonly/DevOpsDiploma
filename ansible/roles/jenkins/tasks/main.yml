@@ -96,7 +96,7 @@
         - name: Extract prepared jenkins_home
           ansible.builtin.unarchive:
             src: "{{ prepared_home_archive }}"
-            dest: /opt/
+            dest: "{{ jenkins_home }}"
             owner: 1000
             group: 1000
             mode: '0755'
