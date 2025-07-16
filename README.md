@@ -38,7 +38,7 @@ This is **DevOpsDiploma**—my diploma project where I’ve tamed a Java microse
    cd DevOpsDiploma
    ```
 2. **Set Up Ansible Vault**:
-   - Make sure `vault_pass.txt` has the password for `ansible/roles/*/vars/secrets.yml`.
+   - Make sure `vault_pass.txt` has the password for `ansible/vars/secrets.yml`.
    - Fire it up:
      ```bash
      ANSIBLE_VAULT_PASSWORD_FILE=vault_pass.txt ansible-playbook -i ansible/inventories/hosts.yml ansible/playbooks/setup.yml

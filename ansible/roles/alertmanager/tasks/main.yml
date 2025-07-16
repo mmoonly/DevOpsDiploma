@@ -32,9 +32,8 @@
   block:
     - name: Include encrypted secrets
       ansible.builtin.include_vars:
-        file: vars/secrets.yml
+        file: "{{ playbook_dir }}/../vars/secrets/secrets.yml"
       ignore_errors: yes
-      no_log: true
     - name: Install Docker
       ansible.builtin.apt:
         name:
