@@ -1,38 +1,77 @@
-Role Name
-=========
+# Kibana Role
 
-A brief description of the role goes here.
+This Ansible role deploys and manages the **Kibana** service, a visualization tool for exploring and analyzing logs stored in Elasticsearch as part of the ELK Stack. It supports configuration, service management, and optional cleanup of the Kibana setup.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ubuntu 24.04 (or a compatible Linux distribution).
+- Docker and Docker Compose installed.
+- Ansible for role execution.
+- Elasticsearch service running and accessible (default port: `9200`).
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Defined in `defaults/main.yml`:
 
-Dependencies
-------------
+- `kibana_version: "9.0.3"`: Version of the Kibana Docker image.
+- `kibana_port: 5601`: Port for accessing Kibana.
+- `elasticsearch_host: "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"`: Elasticsearch server IP.
+- `elasticsearch_port: 9200`: Elasticsearch server port.
+- `elk_data_dir: "/data/elk"`: Base directory for Kibana data.
+- `elk_config_dir: "/data/elk/configs"`: Base directory for configuration files.
+- `kibana_flush: false`: If `true`, removes Kibana service, container, and directories.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Dependencies
 
-Example Playbook
-----------------
+None.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## Role Tasks
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+The role performs the following tasks based on the `kibana_flush` variable:
 
-License
--------
+### When `kibana_flush=true`
+- Stops the Kibana service.
+- Removes the Kibana Docker container.
+- Deletes data (`/data/elk/kibana`) and configuration (`/data/elk/configs/kibana`) directories.
+- Removes the systemd unit file (`/etc/systemd/system/kibana.service`).
+- Resets failed service states and reloads systemd.
 
-BSD
+### When `kibana_flush=false`
+- Installs Docker and Docker Compose.
+- Creates data and configuration directories with appropriate permissions.
+- Deploys the Kibana configuration file (`kibana.yml`) from `templates/kibana.yml.j2`.
+- Creates and enables the systemd unit file (`kibana.service`) from `templates/kibana.service.j2`.
+- Starts the Kibana service.
 
-Author Information
-------------------
+## Configuration Details
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **Kibana Configuration** (`templates/kibana.yml.j2`):
+  - Sets the server port (`server.port: {{ kibana_port }}`).
+  - Configures Kibana to listen on all network interfaces (`server.host: "0.0.0.0"`).
+  - Specifies the Elasticsearch host (`elasticsearch.hosts: ["http://{{ elasticsearch_host }}:{{ elasticsearch_port }}"]`).
+
+- **Systemd Service** (`templates/kibana.service.j2`):
+  - Runs Kibana as a Docker container, mapping the specified port (`5601`) and volumes for data and configuration.
+  - Ensures the service restarts automatically and depends on Docker.
+
+## Example Playbook
+
+```yaml
+- hosts: monitoring
+  roles:
+    - role: kibana
+```
+
+## Usage
+
+1. Ensure Elasticsearch is running and accessible at the specified `elasticsearch_host` and `elasticsearch_port` (default: monitoring server IP on port `9200`).
+2. Include the role in your playbook.
+3. Run the playbook:
+   ```bash
+   ansible-playbook -i inventories/hosts.yml playbooks/setup.yml
+   ```
+4. Access Kibana at `http://<monitoring_server_ip>:5601`.
+
+## Author Information
+
+This role is part of the **DevOpsDiploma** project. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
