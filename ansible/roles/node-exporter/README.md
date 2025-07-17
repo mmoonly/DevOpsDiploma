@@ -1,38 +1,65 @@
-Role Name
-=========
+# Node Exporter Role
 
-A brief description of the role goes here.
+This Ansible role deploys and manages the **Prometheus Node Exporter** service, which collects system metrics (e.g., CPU, memory, disk usage) for monitoring by Prometheus. It supports service management and optional cleanup of the Node Exporter setup.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ubuntu 24.04 (or a compatible Linux distribution).
+- Docker and Docker Compose installed.
+- Ansible for role execution.
+- Prometheus service configured to scrape metrics from Node Exporter (default port: `9100`).
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Defined in `defaults/main.yml`:
 
-Dependencies
-------------
+- `node_exporter_version: "latest"`: Version of the Node Exporter Docker image.
+- `node_exporter_port: 9100`: Port for accessing Node Exporter metrics.
+- `node_exporter_flush: false`: If `true`, removes Node Exporter service and container.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Dependencies
 
-Example Playbook
-----------------
+None.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## Role Tasks
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+The role performs the following tasks based on the `node_exporter_flush` variable:
 
-License
--------
+### When `node_exporter_flush=true`
+- Stops the Node Exporter service.
+- Removes the Node Exporter Docker container.
+- Removes the systemd unit file (`/etc/systemd/system/node-exporter.service`).
+- Resets failed service states and reloads systemd.
 
-BSD
+### When `node_exporter_flush=false`
+- Installs Docker and Docker Compose.
+- Creates and enables the systemd unit file (`node-exporter.service`) from `templates/node-exporter.service.j2`.
+- Starts the Node Exporter service.
 
-Author Information
-------------------
+## Configuration Details
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **Systemd Service** (`templates/node-exporter.service.j2`):
+  - Runs Node Exporter as a Docker container, mapping the specified port (`9100`).
+  - Ensures the service restarts automatically and depends on Docker.
+
+## Example Playbook
+
+```yaml
+- hosts: monitoring
+  roles:
+    - role: node-exporter
+```
+
+## Usage
+
+1. Ensure Prometheus is configured to scrape metrics from `node_exporter_port` (default: `9100`).
+2. Include the role in your playbook.
+3. Run the playbook:
+   ```bash
+   ansible-playbook -i inventories/hosts.yml playbooks/setup.yml
+   ```
+4. Access Node Exporter metrics at `http://<monitoring_server_ip>:9100/metrics`.
+
+## Author Information
+
+This role is part of the **DevOpsDiploma** project. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
