@@ -1,38 +1,87 @@
-Role Name
-=========
+# Grafana Role
 
-A brief description of the role goes here.
+This Ansible role deploys and manages the **Grafana** service, a visualization platform for displaying metrics from Prometheus. It supports configuration, service management, dashboard provisioning, and optional cleanup of the Grafana setup.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ubuntu 24.04 (or a compatible Linux distribution).
+- Docker and Docker Compose installed.
+- Ansible for role execution.
+- Prometheus service running and accessible (default port: `9090`).
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Defined in `defaults/main.yml`:
 
-Dependencies
-------------
+- `grafana_version: "latest"`: Version of the Grafana Docker image.
+- `grafana_port: 3000`: Port for accessing Grafana.
+- `grafana_config_dir: "/data/grafana/configs"`: Directory for configuration files.
+- `grafana_provisioning_dir: "/data/grafana/configs/provisioning"`: Directory for provisioning configurations.
+- `grafana_data_dir: "/data/grafana/data"`: Directory for persistent data.
+- `grafana_flush: false`: If `true`, removes Grafana service, container, and directories.
+- `prometheus_host: "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"`: Prometheus server IP.
+- `prometheus_port: 9090`: Prometheus server port.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Dependencies
 
-Example Playbook
-----------------
+None.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## Role Tasks
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+The role performs the following tasks based on the `grafana_flush` variable:
 
-License
--------
+### When `grafana_flush=true`
+- Stops the Grafana service.
+- Removes the Grafana Docker container.
+- Deletes configuration (`/data/grafana/configs`) and data (`/data/grafana/data`) directories.
+- Removes the systemd unit file (`/etc/systemd/system/grafana.service`).
+- Resets failed service states and reloads systemd.
 
-BSD
+### When `grafana_flush=false`
+- Installs Docker and Docker Compose.
+- Creates configuration, provisioning, and data directories with appropriate permissions (owner/group: `472`, Grafana's default user).
+- Deploys the Prometheus datasource configuration (`datasource.yml`) from `templates/datasource.yml.j2`.
+- Deploys the dashboard provisioning configuration (`default.yml`) from `templates/dashboard-provisioning.yml.j2`.
+- Copies the Node Exporter dashboard (`node-exporter-dashboard.json`) to the configuration directory.
+- Creates and enables the systemd unit file (`grafana.service`) from `templates/grafana.service.j2`.
+- Starts the Grafana service.
 
-Author Information
-------------------
+## Configuration Details
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **Datasource Configuration** (`templates/datasource.yml.j2`):
+  - Configures a Prometheus datasource with the name `Prometheus`.
+  - Sets the URL to `http://{{ prometheus_host }}:{{ prometheus_port }}`.
+  - Uses proxy access and marks it as the default datasource.
+
+- **Dashboard Provisioning** (`templates/dashboard-provisioning.yml.j2`):
+  - Configures Grafana to load dashboards from the `/dashboards` directory.
+  - Uses the `file` provider with organization ID `1`.
+
+- **Node Exporter Dashboard** (`files/node-exporter-dashboard.json`):
+  - Pre-configured dashboard for visualizing Node Exporter metrics, copied to `/data/grafana/configs`.
+
+- **Systemd Service** (`templates/grafana.service.j2`):
+  - Runs Grafana as a Docker container, mapping the specified port (`3000`) and volumes for provisioning, dashboards, and data.
+  - Ensures the service restarts automatically and depends on Docker.
+
+## Example Playbook
+
+```yaml
+- hosts: monitoring
+  roles:
+    - role: grafana
+```
+
+## Usage
+
+1. Ensure Prometheus is running and accessible at the specified `prometheus_host` and `prometheus_port` (default: monitoring server IP on port `9090`).
+2. Include the role in your playbook.
+3. Run the playbook:
+   ```bash
+   ansible-playbook -i inventories/hosts.yml playbooks/setup.yml
+   ```
+4. Access Grafana at `http://<monitoring_server_ip>:3000`.
+
+## Author Information
+
+This role is part of the **DevOpsDiploma** project. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
