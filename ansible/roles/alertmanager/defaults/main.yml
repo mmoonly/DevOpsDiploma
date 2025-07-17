@@ -4,5 +4,5 @@ alertmanager_port        : 9093
 alertmanager_config_dir  : "/data/alertmanager/configs"
 alertmanager_data_dir    : "/data/alertmanager/data"
 alertmanager_flush       : false
-telegram_bot_token       : 123
-telegram_chat_id         : 123
+telegram_bot_token       : 123  # Must be overridden in ansible/vars/secrets/secrets.yml
+telegram_chat_id         : 123  # Must be overridden in ansible/vars/secrets/secrets.yml

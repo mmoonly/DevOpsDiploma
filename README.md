@@ -7,10 +7,10 @@ This repository contains the **DevOpsDiploma** project, a comprehensive demonstr
 The project deploys a Java application across three servers:
 - **Jenkins Server** (`192.168.100.15`): Hosts Jenkins for CI/CD, building and deploying the application.
 - **App Server** (`192.168.100.13`): Runs the Java application in a Docker container.
-- **Monitoring and Logging Server** (`192.168.100.14`): Hosts Prometheus, Grafana, Alertmanager, and the ELK Stack for monitoring and logging.
+- **Monitoring and Logging Server** (`192.168.100.14`): Hosts Prometheus, Grafana, Alertmanager for metrics and alerting, and the ELK Stack for log collection and visualization.
 
 **Workflow**:
-1. Jenkins polls the repository every minute, builds the Java application, runs tests, and pushes a Docker image to Docker Hub.
+1. Jenkins polls the repository every 2 minutes, builds the Java application, runs tests, and pushes a Docker image to Docker Hub.
 2. The application is deployed to the app server.
 3. Filebeat collects logs from `/var/log` and sends them to Logstash, which processes and forwards them to Elasticsearch.
 4. Kibana visualizes logs from Elasticsearch.
@@ -64,7 +64,7 @@ To deploy and run this project, ensure you have:
 - **System Requirements**:
   - **Jenkins Server**: At least 2 CPUs, 2GB RAM, 20GB disk space.
   - **App Server**: At least 1 CPU, 1GB RAM, 10GB disk space.
-  - **Monitoring and Logging Server**: At least 2 CPUs, 8GB RAM, 30GB disk space (due to ELK Stack storage needs).
+  - **Monitoring and Logging Server**: At least 2 CPUs, 6GB RAM (8GB recommended for production), 30GB disk space (due to ELK Stack storage needs).
 
 ## Installation and Setup
 
@@ -75,8 +75,8 @@ cd DevOpsDiploma
 ```
 
 ### 2. Configure Ansible Vault
-- Create `vault_pass.txt` with the password for decrypting `ansible/vars/secrets/secrets.yml`.
-- Ensure `ansible/vars/secrets/secrets.yml` contains valid `vault_telegram_bot_token` and `vault_telegram_chat_id` for Alertmanager.
+- Create `vault_pass.txt` with a strong password for decrypting `ansible/vars/secrets/secrets.yml`.
+- Ensure `ansible/vars/secrets/secrets.yml` contains valid `telegram_bot_token` and `telegram_chat_id` for Alertmanager.
 
 ### 3. Update Inventory
 - Modify `ansible/inventories/hosts.yml` to include your server IPs and SSH key paths. Example:
@@ -104,30 +104,7 @@ cd DevOpsDiploma
   ```
 
 ### 4. Create `jenkins_home_prepared.tar.gz` (Optional)
-If using `use_prepared_home=true` in the `jenkins` role (default), create the pre-configured Jenkins home archive:
-1. **Set up a temporary Jenkins instance**:
-   - Run a Jenkins container locally or on a test server:
-     ```bash
-     docker run -d --name temp-jenkins -p 8080:8080 -v /tmp/jenkins_home:/var/jenkins_home jenkins/jenkins:lts-jdk21
-     ```
-   - Access Jenkins at `http://localhost:8080` and complete the initial setup (install suggested plugins, create an admin user).
-2. **Configure Jenkins**:
-   - Install required plugins (e.g., Docker, Maven, Telegram Notification) via `Manage Jenkins > Manage Plugins`.
-   - Configure credentials (`docker-creds`, `jenkins-to-app-ssh`, `telegram-bot-token`, `telegram-chat-id`) in `Manage Jenkins > Manage Credentials`.
-   - Configure the pipeline or other settings as needed for your project.
-3. **Export the Jenkins home directory**:
-   - Stop the temporary Jenkins container:
-     ```bash
-     docker stop temp-jenkins
-     ```
-   - Archive the `/tmp/jenkins_home` directory:
-     ```bash
-     tar -zcvf jenkins_home_prepared.tar.gz -C /tmp/jenkins_home .
-     ```
-   - Move the archive to the Ansible control node:
-     ```bash
-     mv jenkins_home_prepared.tar.gz /home/ubuntu/DevOpsDiploma/ci/jenkins_home_prepared.tar.gz
-     ```
+If using `use_prepared_home=true` in the `jenkins` role (default), create the pre-configured Jenkins home archive. See `ansible/roles/jenkins/README.md` for detailed instructions.
 
 ### 5. Deploy the Infrastructure
 - Execute the playbook to provision the infrastructure:
@@ -223,7 +200,7 @@ Each command should return a `200 OK` status if the service is running.
 - **Ansible Vault**: Use a strong password for `vault_pass.txt` and store it securely (e.g., in a password manager).
 - **File Permissions**: Adjust directory permissions (e.g., `0777` in ELK roles) to stricter values (e.g., `0755` or `0700`) for production.
 - **Network Security**: Restrict access to service ports (e.g., `9090`, `9200`, `5601`) using a firewall (e.g., `ufw`) or security groups.
-- **Credentials**: Rotate `vault_telegram_bot_token` and `vault_telegram_chat_id` regularly and avoid hardcoding sensitive data.
+- **Credentials**: Rotate `telegram_bot_token` and `telegram_chat_id` regularly and avoid hardcoding sensitive data.
 - **HTTPS**: For production, configure a reverse proxy (e.g., Nginx) with HTTPS for Jenkins, Grafana, and Kibana.
 
 ## Project Status

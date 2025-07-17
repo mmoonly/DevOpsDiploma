@@ -19,12 +19,14 @@ Defined in `defaults/main.yml`:
 - `alertmanager_config_dir: "/data/alertmanager/configs"`: Directory for configuration files.
 - `alertmanager_data_dir: "/data/alertmanager/data"`: Directory for persistent data.
 - `alertmanager_flush: false`: If `true`, removes Alertmanager service, container, and directories.
-- `telegram_bot_token: 123`: Placeholder for Telegram bot token (overridden by `secrets.yml`).
-- `telegram_chat_id: 123`: Placeholder for Telegram chat ID (overridden by `secrets.yml`).
+- `telegram_bot_token: 123`: Placeholder for Telegram bot token (must be overridden in `ansible/vars/secrets/secrets.yml`).
+- `telegram_chat_id: 123`: Placeholder for Telegram chat ID (must be overridden in `ansible/vars/secrets/secrets.yml`).
 
 Variables from `ansible/vars/secrets/secrets.yml` (encrypted):
 - `telegram_bot_token`: Actual Telegram bot token.
 - `telegram_chat_id`: Actual Telegram chat ID.
+
+**Note**: The `telegram_bot_token` and `telegram_chat_id` in `defaults/main.yml` are placeholders (`123`) and **must** be overridden with actual values in `ansible/vars/secrets/secrets.yml` for Alertmanager to send Telegram notifications.
 
 ## Role Tasks
 
@@ -44,7 +46,6 @@ The role performs the following tasks based on the `alertmanager_flush` variable
 - Deploys the Alertmanager configuration file (`alertmanager.yml`) from `templates/alertmanager.yml.j2`.
 - Copies the Telegram notification template (`telegram.tmpl`) to the configuration directory.
 - Creates and enables the systemd unit file (`alertmanager.service`) from `templates/alertmanager.service.j2`.
-- Starts the Facet joint: alertmanager
 - Starts the Alertmanager service.
 
 ## Configuration Details
