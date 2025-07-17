@@ -1,6 +1,37 @@
 # DevOps Diploma Project
 
-This repository contains the **DevOpsDiploma** project, a comprehensive demonstration of DevOps practices applied to a Java-based microservices application. The project leverages **Infrastructure as Code (IaC)** with Ansible, a robust **CI/CD pipeline** powered by Jenkins, and a monitoring and logging stack using Prometheus, Grafana, Alertmanager, and the ELK Stack (Elasticsearch, Logstash, Kibana, Filebeat).
+This repository contains the **DevOpsDiploma** project, a comprehensive demonstration of DevOps practices applied to a Java-based microservices application. It leverages **Infrastructure as Code (IaC)** with Ansible, a robust **CI/CD pipeline** powered by Jenkins, and a monitoring and logging stack using Prometheus, Grafana, Alertmanager, and the ELK Stack (Elasticsearch, Logstash, Kibana, Filebeat).
+
+## Project Architecture
+
+The project deploys a Java application across three servers:
+- **Jenkins Server** (`192.168.100.15`): Hosts Jenkins for CI/CD, building and deploying the application.
+- **App Server** (`192.168.100.13`): Runs the Java application in a Docker container.
+- **Monitoring and Logging Server** (`192.168.100.14`): Hosts Prometheus, Grafana, Alertmanager, and the ELK Stack for monitoring and logging.
+
+**Workflow**:
+1. Jenkins polls the repository every minute, builds the Java application, runs tests, and pushes a Docker image to Docker Hub.
+2. The application is deployed to the app server.
+3. Filebeat collects logs from `/var/log` and sends them to Logstash, which processes and forwards them to Elasticsearch.
+4. Kibana visualizes logs from Elasticsearch.
+5. Node Exporter collects system metrics, Prometheus scrapes them, and Grafana displays dashboards.
+6. Alertmanager sends notifications to Telegram for critical events.
+
+```mermaid
+graph TD
+    A[Git Repository] -->|Poll SCM| B[Jenkins<br>192.168.100.15:8080]
+    B -->|Build & Push| C[Docker Hub]
+    B -->|Deploy| D[App Server<br>192.168.100.13:8080]
+    D -->|Logs| E[Filebeat]
+    E -->|Forward| F[Logstash<br>192.168.100.14:5044]
+    F -->|Store| G[Elasticsearch<br>192.168.100.14:9200]
+    G -->|Visualize| H[Kibana<br>192.168.100.14:5601]
+    D -->|Metrics| I[Node Exporter<br>:9100]
+    I -->|Scrape| J[Prometheus<br>192.168.100.14:9090]
+    J -->|Visualize| K[Grafana<br>192.168.100.14:3000]
+    J -->|Alerts| L[Alertmanager<br>192.168.100.14:9093]
+    L -->|Notify| M[Telegram]
+```
 
 ## Project Structure
 
@@ -25,11 +56,15 @@ This repository contains the **DevOpsDiploma** project, a comprehensive demonstr
 ## Prerequisites
 
 To deploy and run this project, ensure you have:
-- Ubuntu 24.04 (or a compatible Linux distribution).
-- Docker and Docker Compose installed.
-- Java 21 and Maven for building the application.
+- Ubuntu 24.04 (or a compatible Linux distribution) on all servers.
+- Docker and Docker Compose installed on all servers.
+- Java 21 and Maven for building the application (required on the Jenkins server).
 - Git for cloning the repository.
-- Ansible for infrastructure provisioning.
+- Ansible (version 2.9 or higher) for infrastructure provisioning.
+- **System Requirements**:
+  - **Jenkins Server**: At least 2 CPUs, 2GB RAM, 20GB disk space.
+  - **App Server**: At least 1 CPU, 1GB RAM, 10GB disk space.
+  - **Monitoring and Logging Server**: At least 2 CPUs, 8GB RAM, 30GB disk space (due to ELK Stack storage needs).
 
 ## Installation and Setup
 
@@ -40,11 +75,8 @@ cd DevOpsDiploma
 ```
 
 ### 2. Configure Ansible Vault
-- Ensure `vault_pass.txt` contains the password for decrypting `ansible/vars/secrets/secrets.yml`.
-- Run the playbook:
-  ```bash
-  ANSIBLE_VAULT_PASSWORD_FILE=vault_pass.txt ansible-playbook -i ansible/inventories/hosts.yml ansible/playbooks/setup.yml
-  ```
+- Create `vault_pass.txt` with the password for decrypting `ansible/vars/secrets/secrets.yml`.
+- Ensure `ansible/vars/secrets/secrets.yml` contains valid `vault_telegram_bot_token` and `vault_telegram_chat_id` for Alertmanager.
 
 ### 3. Update Inventory
 - Modify `ansible/inventories/hosts.yml` to include your server IPs and SSH key paths. Example:
@@ -71,15 +103,41 @@ cd DevOpsDiploma
             ansible_ssh_private_key_file: ~/.ssh/id_rsa
   ```
 
-### 4. Deploy the Infrastructure
+### 4. Create `jenkins_home_prepared.tar.gz` (Optional)
+If using `use_prepared_home=true` in the `jenkins` role (default), create the pre-configured Jenkins home archive:
+1. **Set up a temporary Jenkins instance**:
+   - Run a Jenkins container locally or on a test server:
+     ```bash
+     docker run -d --name temp-jenkins -p 8080:8080 -v /tmp/jenkins_home:/var/jenkins_home jenkins/jenkins:lts-jdk21
+     ```
+   - Access Jenkins at `http://localhost:8080` and complete the initial setup (install suggested plugins, create an admin user).
+2. **Configure Jenkins**:
+   - Install required plugins (e.g., Docker, Maven, Telegram Notification) via `Manage Jenkins > Manage Plugins`.
+   - Configure credentials (`docker-creds`, `jenkins-to-app-ssh`, `telegram-bot-token`, `telegram-chat-id`) in `Manage Jenkins > Manage Credentials`.
+   - Configure the pipeline or other settings as needed for your project.
+3. **Export the Jenkins home directory**:
+   - Stop the temporary Jenkins container:
+     ```bash
+     docker stop temp-jenkins
+     ```
+   - Archive the `/tmp/jenkins_home` directory:
+     ```bash
+     tar -zcvf jenkins_home_prepared.tar.gz -C /tmp/jenkins_home .
+     ```
+   - Move the archive to the Ansible control node:
+     ```bash
+     mv jenkins_home_prepared.tar.gz /home/ubuntu/DevOpsDiploma/ci/jenkins_home_prepared.tar.gz
+     ```
+
+### 5. Deploy the Infrastructure
 - Execute the playbook to provision the infrastructure:
   ```bash
   ANSIBLE_VAULT_PASSWORD_FILE=vault_pass.txt ansible-playbook -i ansible/inventories/hosts.yml ansible/playbooks/setup.yml
   ```
 
-### 5. Configure Jenkins CI/CD
+### 6. Configure Jenkins CI/CD
 - Access Jenkins at `http://192.168.100.15:8080`.
-- Configure credentials in Jenkins for:
+- If `use_prepared_home=false`, configure credentials manually:
   - `docker-creds`: Docker Hub authentication.
   - `jenkins-to-app-ssh`: SSH key for app server deployment.
   - `telegram-bot-token`: Telegram bot token for notifications.
@@ -88,7 +146,7 @@ cd DevOpsDiploma
 
 ## Service Roles
 
-The project includes Ansible roles for deploying and managing various services:
+The project includes Ansible roles for deploying and managing various services. For detailed information, refer to the `README.md` in each role's directory under `ansible/roles/`:
 
 | Role             | Version       | Port  | Config Path                    | Data Path                      | Behavior                                                                 |
 |------------------|---------------|-------|--------------------------------|--------------------------------|--------------------------------------------------------------------------|
@@ -128,6 +186,30 @@ The project includes a robust monitoring and logging stack:
   - **Kibana**: Visualizes logs at `http://192.168.100.14:5601`.
   - **Filebeat**: Collects logs from `/var/log`.
 
+## Verification
+
+To verify that services are running correctly, use the following commands from the Ansible control node:
+```bash
+# Jenkins
+curl -I http://192.168.100.15:8080
+# App Server
+curl -I http://192.168.100.13:8080
+# Prometheus
+curl -I http://192.168.100.14:9090
+# Grafana
+curl -I http://192.168.100.14:3000
+# Alertmanager
+curl -I http://192.168.100.14:9093
+# Elasticsearch
+curl -I http://192.168.100.14:9200
+# Kibana
+curl -I http://192.168.100.14:5601
+# Node Exporter
+curl -I http://192.168.100.14:9100/metrics
+```
+
+Each command should return a `200 OK` status if the service is running.
+
 ## Tools Used
 
 - **IaC**: Ansible for infrastructure provisioning.
@@ -136,10 +218,20 @@ The project includes a robust monitoring and logging stack:
 - **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana, Filebeat).
 - **Application**: Java application built with Maven.
 
+## Security Recommendations
+
+- **Ansible Vault**: Use a strong password for `vault_pass.txt` and store it securely (e.g., in a password manager).
+- **File Permissions**: Adjust directory permissions (e.g., `0777` in ELK roles) to stricter values (e.g., `0755` or `0700`) for production.
+- **Network Security**: Restrict access to service ports (e.g., `9090`, `9200`, `5601`) using a firewall (e.g., `ufw`) or security groups.
+- **Credentials**: Rotate `vault_telegram_bot_token` and `vault_telegram_chat_id` regularly and avoid hardcoding sensitive data.
+- **HTTPS**: For production, configure a reverse proxy (e.g., Nginx) with HTTPS for Jenkins, Grafana, and Kibana.
+
 ## Project Status
 
 - Infrastructure provisioning is fully functional.
 - CI/CD pipeline is operational and actively used.
 - Monitoring and logging systems are deployed and ready for testing.
 
+## Author Information
 
+This project is part of the **DevOpsDiploma** initiative. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
