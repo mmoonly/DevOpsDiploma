@@ -1,38 +1,76 @@
-Role Name
-=========
+# Elasticsearch Role
 
-A brief description of the role goes here.
+This Ansible role deploys and manages the **Elasticsearch** service, a core component of the ELK Stack for storing and indexing logs. It supports configuration, service management, and optional cleanup of the Elasticsearch setup.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ubuntu 24.04 (or a compatible Linux distribution).
+- Docker and Docker Compose installed.
+- Ansible for role execution.
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Defined in `defaults/main.yml`:
 
-Dependencies
-------------
+- `elasticsearch_version: "9.0.3"`: Version of the Elasticsearch Docker image.
+- `elasticsearch_port: 9200`: Port for accessing Elasticsearch.
+- `elk_data_dir: "/data/elk"`: Base directory for Elasticsearch data.
+- `elk_config_dir: "/data/elk/configs"`: Base directory for configuration files.
+- `elasticsearch_flush: false`: If `true`, removes Elasticsearch service, container, and directories.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Dependencies
 
-Example Playbook
-----------------
+None.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## Role Tasks
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+The role performs the following tasks based on the `elasticsearch_flush` variable:
 
-License
--------
+### When `elasticsearch_flush=true`
+- Stops the Elasticsearch service.
+- Removes the Elasticsearch Docker container.
+- Deletes data (`/data/elk/elasticsearch`) and configuration (`/data/elk/configs/elasticsearch`) directories.
+- Removes the systemd unit file (`/etc/systemd/system/elasticsearch.service`).
+- Resets failed service states and reloads systemd.
 
-BSD
+### When `elasticsearch_flush=false`
+- Installs Docker and Docker Compose.
+- Creates data and configuration directories with appropriate permissions.
+- Deploys the Elasticsearch configuration file (`elasticsearch.yml`) from `templates/elasticsearch.yml.j2`.
+- Creates and enables the systemd unit file (`elasticsearch.service`) from `templates/elasticsearch.service.j2`.
+- Starts the Elasticsearch service.
 
-Author Information
-------------------
+## Configuration Details
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **Elasticsearch Configuration** (`templates/elasticsearch.yml.j2`):
+  - Sets the cluster name to `elasticsearch`.
+  - Configures the service to listen on all network interfaces (`network.host: 0.0.0.0`).
+  - Specifies the HTTP port (`http.port: {{ elasticsearch_port }}`).
+
+- **Systemd Service** (`templates/elasticsearch.service.j2`):
+  - Runs Elasticsearch as a Docker container, mapping the specified port (`9200`) and volumes for data and configuration.
+  - Sets environment variables:
+    - `discovery.type=single-node`: Runs Elasticsearch in single-node mode.
+    - `xpack.security.enabled=false`: Disables security features for simplicity.
+  - Ensures the service restarts automatically and depends on Docker.
+
+## Example Playbook
+
+```yaml
+- hosts: monitoring
+  roles:
+    - role: elasticsearch
+```
+
+## Usage
+
+1. Include the role in your playbook.
+2. Run the playbook:
+   ```bash
+   ansible-playbook -i inventories/hosts.yml playbooks/setup.yml
+   ```
+3. Access Elasticsearch at `http://<monitoring_server_ip>:9200`.
+
+## Author Information
+
+This role is part of the **DevOpsDiploma** project. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
