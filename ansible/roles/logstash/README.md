@@ -1,38 +1,80 @@
-Role Name
-=========
+# Logstash Role
 
-A brief description of the role goes here.
+This Ansible role deploys and manages the **Logstash** service, a data processing pipeline for ingesting logs from Filebeat and forwarding them to Elasticsearch as part of the ELK Stack. It supports configuration, service management, and optional cleanup of the Logstash setup.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ubuntu 24.04 (or a compatible Linux distribution).
+- Docker and Docker Compose installed.
+- Ansible for role execution.
+- Elasticsearch service running and accessible (default port: `9200`).
+- Filebeat configured to send logs to Logstash (default port: `5044`).
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Defined in `defaults/main.yml`:
 
-Dependencies
-------------
+- `logstash_version: "9.0.3"`: Version of the Logstash Docker image.
+- `logstash_port: 5044`: Port for receiving logs from Filebeat.
+- `elasticsearch_host: "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"`: Elasticsearch server IP.
+- `elasticsearch_port: 9200`: Elasticsearch server port.
+- `elk_data_dir: "/data/elk"`: Base directory for Logstash data.
+- `elk_config_dir: "/data/elk/configs"`: Base directory for configuration files.
+- `logstash_flush: false`: If `true`, removes Logstash service, container, and directories.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Dependencies
 
-Example Playbook
-----------------
+None.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## Role Tasks
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+The role performs the following tasks based on the `logstash_flush` variable:
 
-License
--------
+### When `logstash_flush=true`
+- Stops the Logstash service.
+- Removes the Logstash Docker container.
+- Deletes data (`/data/elk/logstash`) and configuration (`/data/elk/configs/logstash`) directories.
+- Removes the systemd unit file (`/etc/systemd/system/logstash.service`).
+- Resets failed service states and reloads systemd.
 
-BSD
+### When `logstash_flush=false`
+- Installs Docker and Docker Compose.
+- Creates data, configuration, and pipeline directories with appropriate permissions.
+- Deploys the Logstash pipeline configuration (`logstash.conf`) from `templates/logstash.conf.j2`.
+- Creates and enables the systemd unit file (`logstash.service`) from `templates/logstash.service.j2`.
+- Starts the Logstash service.
 
-Author Information
-------------------
+## Configuration Details
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **Logstash Pipeline Configuration** (`templates/logstash.conf.j2`):
+  - Configures an input plugin to receive logs from Filebeat on the specified port (`logstash_port`).
+  - Configures an output plugin to send logs to Elasticsearch at `http://{{ elasticsearch_host }}:{{ elasticsearch_port }}`.
+  - Indexes logs with a dynamic index name (`logs-%{+YYYY.MM.dd}`) based on the date.
+
+- **Systemd Service** (`templates/logstash.service.j2`):
+  - Runs Logstash as a Docker container in host network mode.
+  - Mounts volumes for data (`/usr/share/logstash/data`) and pipeline configuration (`/usr/share/logstash/pipeline`).
+  - Uses the default entrypoint (`/usr/local/bin/docker-entrypoint`) for Logstash.
+  - Ensures the service restarts automatically and depends on Docker.
+
+## Example Playbook
+
+```yaml
+- hosts: monitoring
+  roles:
+    - role: logstash
+```
+
+## Usage
+
+1. Ensure Elasticsearch is running and accessible at the specified `elasticsearch_host` and `elasticsearch_port` (default: monitoring server IP on port `9200`).
+2. Ensure Filebeat is configured to send logs to `logstash_port` (default: `5044`).
+3. Include the role in your playbook.
+4. Run the playbook:
+   ```bash
+   ansible-playbook -i inventories/hosts.yml playbooks/setup.yml
+   ```
+
+## Author Information
+
+This role is part of the **DevOpsDiploma** project. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
