@@ -22,10 +22,6 @@ Defined in `defaults/main.yml`:
 - `elk_config_dir: "/data/elk/configs"`: Base directory for configuration files.
 - `logstash_flush: false`: If `true`, removes Logstash service, container, and directories.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `logstash_flush` variable:

@@ -21,10 +21,6 @@ Defined in `defaults/main.yml`:
 - `elk_config_dir: "/data/elk/configs"`: Base directory for configuration files.
 - `kibana_flush: false`: If `true`, removes Kibana service, container, and directories.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `kibana_flush` variable:

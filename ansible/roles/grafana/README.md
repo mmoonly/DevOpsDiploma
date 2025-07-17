@@ -22,10 +22,6 @@ Defined in `defaults/main.yml`:
 - `prometheus_host: "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}"`: Prometheus server IP.
 - `prometheus_port: 9090`: Prometheus server port.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `grafana_flush` variable:

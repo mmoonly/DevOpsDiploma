@@ -18,10 +18,6 @@ Defined in `defaults/main.yml`:
 - `elk_config_dir: "/data/elk/configs"`: Base directory for configuration files.
 - `elasticsearch_flush: false`: If `true`, removes Elasticsearch service, container, and directories.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `elasticsearch_flush` variable:

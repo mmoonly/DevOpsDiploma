@@ -17,10 +17,6 @@ Defined in `defaults/main.yml`:
 - `node_exporter_port: 9100`: Port for accessing Node Exporter metrics.
 - `node_exporter_flush: false`: If `true`, removes Node Exporter service and container.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `node_exporter_flush` variable:

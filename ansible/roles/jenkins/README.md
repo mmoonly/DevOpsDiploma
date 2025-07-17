@@ -24,10 +24,6 @@ Defined in `defaults/main.yml`:
 - `prepared_home_archive: "/opt/jenkins_home_prepared.tar.gz"`: Path to the archive on the remote host.
 - `archive_on_host: "/home/ubuntu/DevOpsDiploma/ci/jenkins_home_prepared.tar.gz"`: Path to the archive on the Ansible control node.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `jenkins_flush` variable:
@@ -42,7 +38,6 @@ The role performs the following tasks based on the `jenkins_flush` variable:
 - Resets failed service states and reloads systemd.
 
 ### When `jenkins_flush=false`
-- Installs Docker and Docker Compose.
 - Installs OpenJDK 21 JRE.
 - Installs Maven 3.9.9 by downloading and extracting the archive, creating a symlink for `mvn`.
 - Creates the Jenkins home directory with appropriate permissions (owner/group: `1000`).
@@ -65,6 +60,41 @@ The role performs the following tasks based on the `jenkins_flush` variable:
   - Runs as user/group `1000:110` for compatibility with Jenkins Docker image.
   - Uses `oneshot` service type with `RemainAfterExit=yes` for Docker container management.
 
+## Creating `jenkins_home_prepared.tar.gz`
+
+To use a pre-configured Jenkins home directory (`use_prepared_home: true`), create the `jenkins_home_prepared.tar.gz` archive as follows:
+
+1. **Set up a temporary Jenkins instance**:
+   - Run a Jenkins container locally or on a test server:
+     ```bash
+     docker run -d --name temp-jenkins -p 8080:8080 -v /tmp/jenkins_home:/var/jenkins_home jenkins/jenkins:lts-jdk21
+     ```
+   - Access Jenkins at `http://localhost:8080` and complete the initial setup (install suggested plugins, create an admin user).
+
+2. **Configure Jenkins**:
+   - Install required plugins (e.g., Docker, Maven, Telegram Notification) via the Jenkins UI (`Manage Jenkins > Manage Plugins`).
+   - Configure credentials (`docker-creds`, `jenkins-to-app-ssh`, `telegram-bot-token`, `telegram-chat-id`) in `Manage Jenkins > Manage Credentials`.
+   - Set up global settings (e.g., Maven, JDK) in `Manage Jenkins > Global Tool Configuration`.
+   - Configure the pipeline or other settings as needed for your project.
+
+3. **Export the Jenkins home directory**:
+   - Stop the temporary Jenkins container:
+     ```bash
+     docker stop temp-jenkins
+     ```
+   - Archive the `/tmp/jenkins_home` directory:
+     ```bash
+     tar -zcvf jenkins_home_prepared.tar.gz -C /tmp/jenkins_home .
+     ```
+   - Move the archive to the Ansible control node:
+     ```bash
+     mv jenkins_home_prepared.tar.gz /home/ubuntu/DevOpsDiploma/ci/jenkins_home_prepared.tar.gz
+     ```
+
+4. **Use the archive**:
+   - Ensure the archive is located at `/home/ubuntu/DevOpsDiploma/ci/jenkins_home_prepared.tar.gz` on the Ansible control node.
+   - The role will copy and extract it to `/opt/jenkins_home` on the target host when `use_prepared_home` is `true`.
+
 ## Example Playbook
 
 ```yaml
@@ -76,7 +106,7 @@ The role performs the following tasks based on the `jenkins_flush` variable:
 ## Usage
 
 1. If using `use_prepared_home=true`, ensure the `jenkins_home_prepared.tar.gz` archive is available at `/home/ubuntu/DevOpsDiploma/ci/` on the control node.
-2. Include the role in your playbook.
+2. Include the role in your playbook after the `docker` role.
 3. Run the playbook:
    ```bash
    ansible-playbook -i inventories/hosts.yml playbooks/setup.yml

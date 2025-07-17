@@ -22,10 +22,6 @@ Defined in `defaults/main.yml`:
 - `alertmanager_port: 9093`: Port for Alertmanager integration.
 - `node_exporter_port: 9100`: Port for Node Exporter metrics.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `prometheus_flush` variable:

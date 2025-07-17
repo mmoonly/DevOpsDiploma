@@ -26,10 +26,6 @@ Variables from `ansible/vars/secrets/secrets.yml` (encrypted):
 - `telegram_bot_token`: Actual Telegram bot token.
 - `telegram_chat_id`: Actual Telegram chat ID.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `alertmanager_flush` variable:

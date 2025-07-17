@@ -21,10 +21,6 @@ Defined in `defaults/main.yml`:
 - `filebeat_user: "root"`: User for running the Filebeat container.
 - `log_volume: "/var/log:/var/log:ro"`: Mounts `/var/log` as read-only for log collection.
 
-## Dependencies
-
-None.
-
 ## Role Tasks
 
 The role performs the following tasks based on the `filebeat_flush` variable:
