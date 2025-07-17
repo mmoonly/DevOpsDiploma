@@ -1,38 +1,83 @@
-Role Name
-=========
+# Filebeat Role
 
-A brief description of the role goes here.
+This Ansible role deploys and manages the **Filebeat** service, a lightweight shipper for collecting and forwarding log data to Logstash as part of the ELK Stack. It supports configuration, service management, and optional cleanup of the Filebeat setup.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ubuntu 24.04 (or a compatible Linux distribution).
+- Docker and Docker Compose installed.
+- Ansible for role execution.
+- Logstash service running and accessible (default port: `5044`).
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Defined in `defaults/main.yml`:
 
-Dependencies
-------------
+- `filebeat_version: "9.0.3"`: Version of the Filebeat Docker image.
+- `elk_data_dir: "/data/elk"`: Base directory for ELK data.
+- `elk_config_dir: "/data/elk/configs"`: Base directory for configuration files.
+- `logstash_host: "{{ hostvars[groups['monitoring'][0]]['ansible_host'] }}:5044"`: Logstash host and port for log forwarding.
+- `filebeat_flush: false`: If `true`, removes Filebeat service, container, and configuration directory.
+- `filebeat_user: "root"`: User for running the Filebeat container.
+- `log_volume: "/var/log:/var/log:ro"`: Mounts `/var/log` as read-only for log collection.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Dependencies
 
-Example Playbook
-----------------
+None.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## Role Tasks
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+The role performs the following tasks based on the `filebeat_flush` variable:
 
-License
--------
+### When `filebeat_flush=true`
+- Stops the Filebeat service.
+- Removes the Filebeat Docker container.
+- Deletes the configuration directory (`/data/elk/configs/filebeat`).
+- Removes the systemd unit file (`/etc/systemd/system/filebeat.service`).
+- Resets failed service states and reloads systemd.
 
-BSD
+### When `filebeat_flush=false`
+- Installs Docker and Docker Compose.
+- Creates the configuration directory with appropriate permissions.
+- Deploys the Filebeat configuration file (`filebeat.yml`) from `templates/filebeat.yml.j2`.
+- Sets permissions on `/var/log` to ensure log access.
+- Creates and enables the systemd unit file (`filebeat.service`) from `templates/filebeat.service.j2`.
+- Starts the Filebeat service.
 
-Author Information
-------------------
+## Configuration Details
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **Filebeat Configuration** (`templates/filebeat.yml.j2`):
+  - Configures Filebeat to collect logs from:
+    - `/var/log/syslog`
+    - `/var/log/auth.log`
+    - `/var/log/kern.log`
+    - `/var/log/messages`
+  - Excludes files like `/var/log/dpkg.log`, compressed logs (`.gz`), and rotated logs (`.1`).
+  - Forwards logs to the specified Logstash host (`logstash_host`).
+
+- **Systemd Service** (`templates/filebeat.service.j2`):
+  - Runs Filebeat as a Docker container in host network mode.
+  - Mounts `/var/log` as read-only and the configuration file (`filebeat.yml`).
+  - Runs as the specified `filebeat_user` (default: `root`).
+  - Ensures the service restarts automatically and depends on Docker.
+
+## Example Playbook
+
+```yaml
+- hosts: monitoring
+  roles:
+    - role: filebeat
+```
+
+## Usage
+
+1. Ensure Logstash is running and accessible at the specified `logstash_host` (default: monitoring server IP on port `5044`).
+2. Include the role in your playbook.
+3. Run the playbook:
+   ```bash
+   ansible-playbook -i inventories/hosts.yml playbooks/setup.yml
+   ```
+
+## Author Information
+
+This role is part of the **DevOpsDiploma** project. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
