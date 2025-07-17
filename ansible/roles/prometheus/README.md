@@ -1,38 +1,89 @@
-Role Name
-=========
+# Prometheus Role
 
-A brief description of the role goes here.
+This Ansible role deploys and manages the **Prometheus** service, a monitoring system for collecting and querying metrics from Node Exporter and triggering alerts via Alertmanager. It supports configuration, service management, and optional cleanup of the Prometheus setup.
 
-Requirements
-------------
+## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+- Ubuntu 24.04 (or a compatible Linux distribution).
+- Docker and Docker Compose installed.
+- Ansible for role execution.
+- Node Exporter service running and accessible (default port: `9100`).
+- Alertmanager service running and accessible (default port: `9093`).
 
-Role Variables
---------------
+## Role Variables
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Defined in `defaults/main.yml`:
 
-Dependencies
-------------
+- `prometheus_version: "latest"`: Version of the Prometheus Docker image.
+- `prometheus_port: 9090`: Port for accessing Prometheus.
+- `prometheus_config_dir: "/data/prometheus/configs"`: Directory for configuration files.
+- `prometheus_data_dir: "/data/prometheus/data"`: Directory for persistent data.
+- `prometheus_flush: false`: If `true`, removes Prometheus service, container, and directories.
+- `alertmanager_port: 9093`: Port for Alertmanager integration.
+- `node_exporter_port: 9100`: Port for Node Exporter metrics.
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+## Dependencies
 
-Example Playbook
-----------------
+None.
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+## Role Tasks
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+The role performs the following tasks based on the `prometheus_flush` variable:
 
-License
--------
+### When `prometheus_flush=true`
+- Stops the Prometheus service.
+- Removes the Prometheus Docker container.
+- Deletes configuration (`/data/prometheus/configs`) and data (`/data/prometheus/data`) directories.
+- Removes the systemd unit file (`/etc/systemd/system/prometheus.service`).
+- Resets failed service states and reloads systemd.
 
-BSD
+### When `prometheus_flush=false`
+- Installs Docker and Docker Compose.
+- Creates configuration and data directories with appropriate permissions.
+- Deploys the Prometheus configuration file (`prometheus.yml`) from `templates/prometheus.yml.j2`.
+- Copies the alert rules (`alert.rules.yml`) from `files/alert.rules.yml`.
+- Creates and enables the systemd unit file (`prometheus.service`) from `templates/prometheus.service.j2`.
+- Starts the Prometheus service.
 
-Author Information
-------------------
+## Configuration Details
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+- **Prometheus Configuration** (`templates/prometheus.yml.j2`):
+  - Sets global scrape and evaluation intervals to `15s`.
+  - Configures Alertmanager integration with targets from the `monitoring` group on `alertmanager_port`.
+  - Specifies alert rules from `alert.rules.yml`.
+  - Defines scrape jobs for:
+    - Prometheus itself (`prometheus` job, targeting its own port).
+    - Node Exporter (`node-exporter` job, targeting all hosts in the `all` group on `node_exporter_port`).
+
+- **Alert Rules** (`files/alert.rules.yml`):
+  - Defines rules for:
+    - `InstanceDown`: Triggers if a target is down for over 1 minute (critical).
+    - `HighCPUUsage`: Triggers if CPU usage exceeds 80% for 5 minutes (warning).
+    - `LowMemory`: Triggers if available memory is below 10% for 5 minutes (critical).
+    - `LowDiskSpace`: Triggers if available disk space is below 10% for 5 minutes (critical).
+
+- **Systemd Service** (`templates/prometheus.service.j2`):
+  - Runs Prometheus as a Docker container, mapping the specified port (`9090`) and volumes for configuration and data.
+  - Ensures the service restarts automatically and depends on Docker.
+
+## Example Playbook
+
+```yaml
+- hosts: monitoring
+  roles:
+    - role: prometheus
+```
+
+## Usage
+
+1. Ensure Node Exporter and Alertmanager are running and accessible on their respective ports (`9100` and `9093`).
+2. Include the role in your playbook.
+3. Run the playbook:
+   ```bash
+   ansible-playbook -i inventories/hosts.yml playbooks/setup.yml
+   ```
+4. Access Prometheus at `http://<monitoring_server_ip>:9090`.
+
+## Author Information
+
+This role is part of the **DevOpsDiploma** project. For feedback or contributions, open an issue or pull request on [GitHub](https://github.com/mmoonly/DevOpsDiploma).
